@@ -11,4 +11,13 @@ export const userRouter = createTRPCRouter({
         },
       });
     }),
+  postNewUser: publicProcedure
+    .input(z.object({ publicKey: z.string() }))
+    .query(({ input, ctx }) => {
+      return ctx.prisma.user.create({
+        data: {
+          publicKey: input.publicKey,
+        },
+      });
+    }),
 });
