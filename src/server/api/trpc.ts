@@ -47,7 +47,7 @@ export const createTRPCRouter = t.router;
 
 export const publicProcedure = t.procedure;
 
-const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
+const enforceUserIsAuthenticated = t.middleware(({ ctx, next }) => {
   if (!ctx.session || !ctx.session.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
@@ -58,4 +58,6 @@ const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
   });
 });
 
-export const protectedProcedure = t.procedure.use(enforceUserIsAuthed);
+export const authenticatedProcedure = t.procedure.use(
+  enforceUserIsAuthenticated
+);
