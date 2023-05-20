@@ -17,6 +17,7 @@ specifiers:
   '@typescript-eslint/eslint-plugin': ^5.56.0
   '@typescript-eslint/parser': ^5.56.0
   autoprefixer: ^10.4.14
+  classnames: ^2.3.2
   concurrently: ^8.0.1
   eslint: ^8.36.0
   eslint-config-next: ^13.4.1
@@ -42,6 +43,7 @@ dependencies:
   '@trpc/next': 10.25.0_az5h32ujo2brumenreds5sahoa
   '@trpc/react-query': 10.25.0_kmnvkwos3u3ir3ixqrf7uws7bm
   '@trpc/server': 10.25.0
+  classnames: 2.3.2
   next: 13.4.1_biqbaboplfbrettd7655fr4n2y
   next-auth: 4.22.1_2xek2u27flvv5bywadnu4xxgx4
   react: 18.2.0
@@ -865,6 +867,10 @@ packages:
     optionalDependencies:
       fsevents: 2.3.2
     dev: true
+
+  /classnames/2.3.2:
+    resolution: {integrity: sha512-CSbhY4cFEJRe6/GQzIk5qXZ4Jeg5pcsP7b5peFSDpffpe1cqjASH/n9UTjBwOp6XpMSTwQ8Za2K5V02ueA7Tmw==}
+    dev: false
 
   /client-only/0.0.1:
     resolution: {integrity: sha512-IV3Ou0jSMzZrd3pZ48nLkT9DA7Ag1pnPzaiQhpW7c3RbcqqzvzzVu+L8gfqMp/8IM2MQtSiqaCxrrcfu8I8rMA==}
