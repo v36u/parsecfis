@@ -5,6 +5,7 @@ import { type AppType } from "next/app";
 import { api } from "~/utils/api";
 
 import Head from "next/head";
+import AppParticles from "~/components/_app/AppParticles";
 import "~/styles/globals.css";
 
 const MyApp: AppType<{ session: Session | null }> = ({
@@ -19,6 +20,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
           content="Realizat de Dumitru A. Vlad, Grupa 302"
         />
       </Head>
+      <AppParticles />
       <SessionProvider session={session}>
         <main>
           <Component {...pageProps} />

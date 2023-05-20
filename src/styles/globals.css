@@ -5,3 +5,29 @@
 body {
   @apply bg-slate-50;
 }
+
+div#__next,
+main {
+  width: 100%;
+  height: 100%;
+}
+
+.interactive {
+  @apply relative z-10;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+img,
+input,
+textarea,
+label,
+p,
+span,
+button {
+  @apply interactive;
+}
