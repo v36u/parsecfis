@@ -1,7 +1,7 @@
-import { useCallback, type FC } from "react";
-import Particles from "react-particles";
-import { loadFull } from "tsparticles";
-import { type Engine } from "tsparticles-engine";
+import { useCallback, type FC } from 'react';
+import Particles from 'react-particles';
+import { loadFull } from 'tsparticles';
+import { type Engine } from 'tsparticles-engine';
 
 const AppParticles: FC = () => {
   const appParticlesInit = useCallback(async (engine: Engine) => {
@@ -16,9 +16,9 @@ const AppParticles: FC = () => {
       options={{
         fps_limit: 60,
         interactivity: {
-          detectsOn: "canvas",
+          detectsOn: 'canvas',
           events: {
-            onHover: { enable: true, mode: "repulse" },
+            onHover: { enable: true, mode: 'repulse' },
             resize: true,
           },
           modes: {
@@ -26,9 +26,9 @@ const AppParticles: FC = () => {
           },
         },
         particles: {
-          color: { value: "#9333ea" },
+          color: { value: '#9333ea' },
           links: {
-            color: "#3b82f6",
+            color: '#3b82f6',
             distance: 150,
             enable: true,
             opacity: 0.3,
@@ -36,16 +36,16 @@ const AppParticles: FC = () => {
           },
           move: {
             bounce: false,
-            direction: "none",
+            direction: 'none',
             enable: true,
-            outMode: "out",
+            outMode: 'out',
             random: true,
             speed: 2,
             straight: false,
           },
           number: { density: { enable: true, area: 700 }, value: 50 },
           opacity: { value: 0.3 },
-          shape: { type: "triangle" },
+          shape: { type: 'triangle' },
           size: { random: true, value: 7.5 },
         },
         detectRetina: true,

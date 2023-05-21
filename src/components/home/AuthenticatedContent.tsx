@@ -1,12 +1,6 @@
-import classNames from "classnames";
-import { signOut } from "next-auth/react";
-import {
-  useCallback,
-  useEffect,
-  useState,
-  type ChangeEvent,
-  type FC,
-} from "react";
+import classNames from 'classnames';
+import { signOut } from 'next-auth/react';
+import { useCallback, useEffect, useState, type ChangeEvent, type FC } from 'react';
 
 let dragCounter = 0;
 
@@ -18,15 +12,12 @@ const AuthenticatedContent: FC = () => {
   };
 
   const [file, setFile] = useState<File | undefined>(undefined);
-  const handleFileChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      const { files } = event.target;
-      if (files && files.length > 0) {
-        setFile(files[0]);
-      }
-    },
-    []
-  );
+  const handleFileChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const { files } = event.target;
+    if (files && files.length > 0) {
+      setFile(files[0]);
+    }
+  }, []);
 
   const [dragging, setDragging] = useState(false);
   const handleDragEnter = useCallback((event: DragEvent) => {
@@ -35,10 +26,7 @@ const AuthenticatedContent: FC = () => {
 
     dragCounter++;
 
-    if (
-      typeof event?.dataTransfer?.items !== "undefined" &&
-      event.dataTransfer.items.length > 0
-    ) {
+    if (typeof event?.dataTransfer?.items !== 'undefined' && event.dataTransfer.items.length > 0) {
       setDragging(true);
     }
   }, []);
@@ -60,25 +48,22 @@ const AuthenticatedContent: FC = () => {
     event.preventDefault();
     event.stopPropagation();
 
-    if (
-      typeof event?.dataTransfer?.files !== "undefined" &&
-      event.dataTransfer.files.length > 0
-    ) {
+    if (typeof event?.dataTransfer?.files !== 'undefined' && event.dataTransfer.files.length > 0) {
       setFile(event.dataTransfer.files[0]);
       setDragging(false);
     }
   }, []);
   useEffect(() => {
-    window.addEventListener("dragenter", handleDragEnter);
-    window.addEventListener("dragleave", handleDragLeave);
-    window.addEventListener("dragover", handleDragOver);
-    window.addEventListener("drop", handleDrop);
+    window.addEventListener('dragenter', handleDragEnter);
+    window.addEventListener('dragleave', handleDragLeave);
+    window.addEventListener('dragover', handleDragOver);
+    window.addEventListener('drop', handleDrop);
 
     return () => {
-      window.removeEventListener("dragenter", handleDragEnter);
-      window.removeEventListener("dragleave", handleDragLeave);
-      window.removeEventListener("dragover", handleDragOver);
-      window.removeEventListener("drop", handleDrop);
+      window.removeEventListener('dragenter', handleDragEnter);
+      window.removeEventListener('dragleave', handleDragLeave);
+      window.removeEventListener('dragover', handleDragOver);
+      window.removeEventListener('drop', handleDrop);
     };
   }, [handleDragEnter, handleDragLeave, handleDragOver, handleDrop]);
 
@@ -88,11 +73,11 @@ const AuthenticatedContent: FC = () => {
         <label
           htmlFor="dropzone-file"
           className={classNames(
-            "dark:hover:bg-bray-800 flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500 dark:hover:bg-gray-600",
+            'dark:hover:bg-bray-800 flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500 dark:hover:bg-gray-600',
             {
-              "border-blue-400 bg-blue-100": dragging,
-              "border-gray-300 bg-gray-50": !dragging,
-            }
+              'border-blue-400 bg-blue-100': dragging,
+              'border-gray-300 bg-gray-50': !dragging,
+            },
           )}
         >
           <div className="flex flex-col items-center justify-center pb-6 pt-5">
@@ -114,36 +99,20 @@ const AuthenticatedContent: FC = () => {
                   ></path>
                 </svg>
                 <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                  <span className="font-semibold">
-                    Click în această zonă pentru a încărca
-                  </span>{" "}
-                  sau trage fișierul aici (drag and drop)
+                  <span className="font-semibold">Click în această zonă pentru a încărca</span> sau trage fișierul aici (drag and drop)
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Orice extensie este acceptată.
-                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Orice extensie este acceptată.</p>
                 {file && (
                   <p className="text-md mt-12 text-gray-500 dark:text-gray-400">
                     <small>Fișierul selectat: </small>
-                    <span className="font-semibold">{file.name}</span>{" "}
-                    <small>({file.size} B)</small>
+                    <span className="font-semibold">{file.name}</span> <small>({file.size} B)</small>
                   </p>
                 )}
               </>
             )}
-            {dragging && (
-              <h1 className="font-bold">
-                Dă drumul fișierului pentru a îl încărca!
-              </h1>
-            )}
+            {dragging && <h1 className="font-bold">Dă drumul fișierului pentru a îl încărca!</h1>}
           </div>
-          <input
-            id="dropzone-file"
-            type="file"
-            className="hidden"
-            onChange={handleFileChange}
-            multiple={false}
-          />
+          <input id="dropzone-file" type="file" className="hidden" onChange={handleFileChange} multiple={false} />
         </label>
       </div>
 

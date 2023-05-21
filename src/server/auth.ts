@@ -1,15 +1,11 @@
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { createPublicKey } from "crypto";
-import { type GetServerSidePropsContext } from "next";
-import {
-  getServerSession,
-  type DefaultSession,
-  type NextAuthOptions,
-} from "next-auth";
-import { env } from "~/env.mjs";
-import { prisma } from "~/server/db";
+import { PrismaAdapter } from '@next-auth/prisma-adapter';
+import { createPublicKey } from 'crypto';
+import { type GetServerSidePropsContext } from 'next';
+import { getServerSession, type DefaultSession, type NextAuthOptions } from 'next-auth';
+import { env } from '~/env.mjs';
+import { prisma } from '~/server/db';
 
-declare module "next-auth" {
+declare module 'next-auth' {
   interface Session extends DefaultSession {
     user: {
       publicKey: string;
@@ -22,31 +18,31 @@ declare module "next-auth" {
 export const authOptions: NextAuthOptions = {
   providers: [
     {
-      id: "private-key",
-      name: "Private Key",
-      type: "credentials",
+      id: 'private-key',
+      name: 'Private Key',
+      type: 'credentials',
       credentials: {
         privateKey: {
-          label: "Cheia privată",
-          type: "text",
+          label: 'Cheia privată',
+          type: 'text',
         },
       },
       async authorize(credentials) {
         if (!credentials?.privateKey) {
-          throw new Error("Cheia privată nu a fost furnizată.");
+          throw new Error('Cheia privată nu a fost furnizată.');
         }
 
         try {
           const publicKey = createPublicKey({
             key: credentials.privateKey,
-            type: "spki",
-            format: "pem",
+            type: 'spki',
+            format: 'pem',
           })
             .export({
-              type: "spki",
-              format: "der",
+              type: 'spki',
+              format: 'der',
             })
-            .toString("hex");
+            .toString('hex');
 
           const user = await prisma.user.upsert({
             where: {
@@ -67,14 +63,14 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
           };
         } catch (_) {
-          throw new Error("Cheia privată nu este validă.");
+          throw new Error('Cheia privată nu este validă.');
         }
       },
     },
   ],
   secret: env.NEXTAUTH_SECRET,
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
   },
   jwt: {
     secret: env.NEXTAUTH_JWT_SECRET,
@@ -82,9 +78,6 @@ export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
 };
 
-export const getServerAuthSession = (ctx: {
-  req: GetServerSidePropsContext["req"];
-  res: GetServerSidePropsContext["res"];
-}) => {
+export const getServerAuthSession = (ctx: { req: GetServerSidePropsContext['req']; res: GetServerSidePropsContext['res'] }) => {
   return getServerSession(ctx.req, ctx.res, authOptions);
 };

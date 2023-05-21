@@ -1,18 +1,18 @@
-import { signIn } from "next-auth/react";
-import { useCallback, useState, type ChangeEvent, type FC } from "react";
-import { api } from "~/utils/api";
+import { signIn } from 'next-auth/react';
+import { useCallback, useState, type ChangeEvent, type FC } from 'react';
+import { api } from '~/utils/api';
 
 const UnauthenticatedContent: FC = () => {
   const keyPair = api.auth.createPrivateKey.useQuery({});
 
-  const [privateKey, setPrivateKey] = useState("");
+  const [privateKey, setPrivateKey] = useState('');
   const handleTextAreaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     setPrivateKey(event.target.value);
   };
 
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const handleAuthenticateButtonClick = useCallback(async () => {
-    const response = await signIn("private-key", {
+    const response = await signIn('private-key', {
       redirect: false,
       privateKey,
     });
@@ -25,8 +25,8 @@ const UnauthenticatedContent: FC = () => {
   const handleGenerateButtonClick = useCallback(async () => {
     const privateKey = keyPair.data;
 
-    if (typeof privateKey !== "string") {
-      setError("Cheia privată nu a putut fi generată.");
+    if (typeof privateKey !== 'string') {
+      setError('Cheia privată nu a putut fi generată.');
       return;
     }
 
@@ -36,10 +36,7 @@ const UnauthenticatedContent: FC = () => {
 
   return (
     <>
-      <label
-        htmlFor="private-key"
-        className="mb-2 block text-2xl font-bold  text-gray-900 dark:text-slate-50"
-      >
+      <label htmlFor="private-key" className="mb-2 block text-2xl font-bold  text-gray-900 dark:text-slate-50">
         Cheia privată
       </label>
       <textarea
@@ -50,9 +47,7 @@ const UnauthenticatedContent: FC = () => {
         value={privateKey}
         onChange={handleTextAreaChange}
       ></textarea>
-      <div className="text-md bg-gradient-to-br from-red-600 to-red-500 bg-clip-text font-bold text-transparent">
-        {error}
-      </div>
+      <div className="text-md bg-gradient-to-br from-red-600 to-red-500 bg-clip-text font-bold text-transparent">{error}</div>
       <button
         type="button"
         className="mb-3 mt-6 inline-flex rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 p-0.5 text-center text-sm font-medium text-slate-50 shadow-lg shadow-purple-500/50 hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-purple-300 dark:shadow-lg dark:shadow-purple-800/80 dark:focus:ring-purple-800"

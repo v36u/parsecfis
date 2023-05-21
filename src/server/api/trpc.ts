@@ -1,8 +1,8 @@
-import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
-import { type Session } from "next-auth";
+import { type CreateNextContextOptions } from '@trpc/server/adapters/next';
+import { type Session } from 'next-auth';
 
-import { getServerAuthSession } from "~/server/auth";
-import { prisma } from "~/server/db";
+import { getServerAuthSession } from '~/server/auth';
+import { prisma } from '~/server/db';
 
 type CreateContextOptions = {
   session: Session | null;
@@ -25,9 +25,9 @@ export const createTRPCContext = async (opts: CreateNextContextOptions) => {
   });
 };
 
-import { initTRPC, TRPCError } from "@trpc/server";
-import superjson from "superjson";
-import { ZodError } from "zod";
+import { initTRPC, TRPCError } from '@trpc/server';
+import superjson from 'superjson';
+import { ZodError } from 'zod';
 
 const t = initTRPC.context<typeof createTRPCContext>().create({
   transformer: superjson,
@@ -36,8 +36,7 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
       ...shape,
       data: {
         ...shape.data,
-        zodError:
-          error.cause instanceof ZodError ? error.cause.flatten() : null,
+        zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
       },
     };
   },
@@ -49,7 +48,7 @@ export const publicProcedure = t.procedure;
 
 const enforceUserIsAuthenticated = t.middleware(({ ctx, next }) => {
   if (!ctx.session || !ctx.session.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED" });
+    throw new TRPCError({ code: 'UNAUTHORIZED' });
   }
   return next({
     ctx: {
@@ -58,6 +57,4 @@ const enforceUserIsAuthenticated = t.middleware(({ ctx, next }) => {
   });
 });
 
-export const authenticatedProcedure = t.procedure.use(
-  enforceUserIsAuthenticated
-);
+export const authenticatedProcedure = t.procedure.use(enforceUserIsAuthenticated);

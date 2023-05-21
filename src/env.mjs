@@ -1,22 +1,13 @@
-import { createEnv } from "@t3-oss/env-nextjs";
-import { z } from "zod";
+import { createEnv } from '@t3-oss/env-nextjs';
+import { z } from 'zod';
 
 export const env = createEnv({
   server: {
     DATABASE_URL: z.string().url(),
-    NODE_ENV: z.enum(["development", "test", "production"]),
-    NEXTAUTH_SECRET:
-      process.env.NODE_ENV === "production"
-        ? z.string().min(1)
-        : z.string().min(1).optional(),
-    NEXTAUTH_JWT_SECRET:
-      process.env.NODE_ENV === "production"
-        ? z.string().min(1)
-        : z.string().min(1).optional(),
-    NEXTAUTH_URL: z.preprocess(
-      (str) => process.env.VERCEL_URL ?? str,
-      process.env.VERCEL ? z.string().min(1) : z.string().url()
-    ),
+    NODE_ENV: z.enum(['development', 'test', 'production']),
+    NEXTAUTH_SECRET: process.env.NODE_ENV === 'production' ? z.string().min(1) : z.string().min(1).optional(),
+    NEXTAUTH_JWT_SECRET: process.env.NODE_ENV === 'production' ? z.string().min(1) : z.string().min(1).optional(),
+    NEXTAUTH_URL: z.preprocess((str) => process.env.VERCEL_URL ?? str, process.env.VERCEL ? z.string().min(1) : z.string().url()),
   },
 
   client: {},
