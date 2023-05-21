@@ -9,37 +9,34 @@ datasource db {
 }
 
 model User {
-    id             Int          @id @default(autoincrement())
-    publicKey      String       @unique
-    email          String?      @unique
+    id             Int         @id @default(autoincrement())
+    publicKey      String      @unique
+    email          String?     @unique
     name           String?
-    registeredAt   DateTime     @default(now())
-    lastLoggedInAt DateTime?    @updatedAt
-    ownedFiles     File[]
-    sharedFiles    SharedFile[]
+    registeredAt   DateTime    @default(now())
+    lastLoggedInAt DateTime    @default(now())
+    sentFiles      File[]
+    receivedFiles  FileShare[]
 }
 
 model File {
-    id        Int          @id @default(autoincrement())
-    ownerId   Int
-    s3Ref     String       @unique
-    createdAt DateTime     @default(now())
-    updatedAt DateTime     @updatedAt
-    owner     User         @relation(fields: [ownerId], references: [id])
-    shares    SharedFile[]
+    id       Int         @id @default(autoincrement())
+    senderId Int         @unique
+    s3Ref    String      @unique
+    sender   User        @relation(fields: [senderId], references: [id])
+    shares   FileShare[]
 
-    @@index([ownerId])
+    @@index([senderId])
 }
 
-model SharedFile {
-    receiverId Int
+model FileShare {
+    id         Int      @id @default(autoincrement())
     fileId     Int
-    receivedAt DateTime @default(now())
-    updatedAt  DateTime @updatedAt
-    receiver   User     @relation(fields: [receiverId], references: [id])
+    receiverId Int
+    sharedAt   DateTime @default(now())
     file       File     @relation(fields: [fileId], references: [id])
+    receiver   User     @relation(fields: [receiverId], references: [id])
 
-    @@id([receiverId, fileId])
-    @@index([receiverId])
     @@index([fileId])
+    @@index([receiverId])
 }
