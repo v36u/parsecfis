@@ -12,11 +12,19 @@ const HomePage: NextPage = () => {
     <>
       <Head>
         <title>Parsecfis - Homepage</title>
-        <link rel="icon" href="/favicon.ico" />
+        <link
+          rel="icon"
+          href="/favicon.ico"
+        />
       </Head>
 
       <div className="mb-48 mt-6 flex items-center justify-center">
-        <Image src="/parsecfis-logo.png" width={64} height={64} alt="Logo ParSecFis" />
+        <Image
+          src="/parsecfis-logo.png"
+          width={64}
+          height={64}
+          alt="Logo ParSecFis"
+        />
         <h1 className="ml-6 text-center text-3xl font-extrabold text-gray-900 dark:text-slate-50 md:text-5xl lg:text-6xl">
           <span className="bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">ParSecFis</span>
         </h1>

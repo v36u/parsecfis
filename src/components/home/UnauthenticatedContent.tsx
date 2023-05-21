@@ -36,7 +36,10 @@ const UnauthenticatedContent: FC = () => {
 
   return (
     <>
-      <label htmlFor="private-key" className="mb-2 block text-2xl font-bold  text-gray-900 dark:text-slate-50">
+      <label
+        htmlFor="private-key"
+        className="mb-2 block text-2xl font-bold  text-gray-900 dark:text-slate-50"
+      >
         Cheia privată
       </label>
       <textarea

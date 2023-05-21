@@ -1,6 +1,7 @@
 import classNames from 'classnames';
 import { signOut } from 'next-auth/react';
 import { useCallback, useEffect, useState, type ChangeEvent, type FC } from 'react';
+import PublicKeyBadge from '../shared/PublicKeyBadge';
 
 let dragCounter = 0;
 
@@ -69,7 +70,7 @@ const AuthenticatedContent: FC = () => {
 
   return (
     <>
-      <div className="flex w-9/12 items-center justify-center md:w-7/12 lg:w-5/12 xl:w-3/12">
+      <div className="flex w-11/12 items-center justify-center md:w-9/12 lg:w-7/12 xl:w-5/12">
         <label
           htmlFor="dropzone-file"
           className={classNames(
@@ -80,7 +81,7 @@ const AuthenticatedContent: FC = () => {
             },
           )}
         >
-          <div className="flex flex-col items-center justify-center pb-6 pt-5">
+          <div className="flex flex-col items-center justify-center pb-6 pt-5 text-center">
             {!dragging && (
               <>
                 <svg
@@ -112,10 +113,17 @@ const AuthenticatedContent: FC = () => {
             )}
             {dragging && <h1 className="font-bold">Dă drumul fișierului pentru a îl încărca!</h1>}
           </div>
-          <input id="dropzone-file" type="file" className="hidden" onChange={handleFileChange} multiple={false} />
+          <input
+            id="dropzone-file"
+            type="file"
+            className="hidden"
+            onChange={handleFileChange}
+            multiple={false}
+          />
         </label>
       </div>
 
+      <PublicKeyBadge />
       <button
         className="group relative mt-3 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 p-0.5 text-sm font-medium text-gray-900 hover:text-slate-50 focus:outline-none focus:ring-4 focus:ring-purple-300 group-hover:from-purple-600 group-hover:to-blue-500 dark:text-slate-50 dark:focus:ring-blue-800"
         onClick={handleLogoutButtonClick}

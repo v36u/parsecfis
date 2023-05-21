@@ -14,7 +14,7 @@ const AppParticles: FC = () => {
       init={appParticlesInit}
       canvasClassName="z-0"
       options={{
-        fps_limit: 60,
+        fps_limit: 75,
         interactivity: {
           detectsOn: 'canvas',
           events: {
@@ -22,7 +22,7 @@ const AppParticles: FC = () => {
             resize: true,
           },
           modes: {
-            repulse: { distance: 80, duration: 0.5 },
+            repulse: { distance: 100, duration: 0.5 },
           },
         },
         particles: {
@@ -43,7 +43,7 @@ const AppParticles: FC = () => {
             speed: 2,
             straight: false,
           },
-          number: { density: { enable: true, area: 700 }, value: 50 },
+          number: { density: { enable: true, area: 1000 }, value: 65 },
           opacity: { value: 0.3 },
           shape: { type: 'triangle' },
           size: { random: true, value: 7.5 },
