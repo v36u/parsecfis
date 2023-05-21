@@ -16,18 +16,18 @@ main {
   @apply relative z-10;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-img,
-input,
-textarea,
-label,
-p,
-span,
-button {
+main h1,
+main h2,
+main h3,
+main h4,
+main h5,
+main h6,
+main img,
+main input,
+main textarea,
+main label,
+main p,
+main span,
+main button {
   @apply interactive;
 }

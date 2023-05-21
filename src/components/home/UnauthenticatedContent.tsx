@@ -3,7 +3,7 @@ import { useCallback, useState, type ChangeEvent, type FC } from 'react';
 import { api } from '~/utils/api';
 
 const UnauthenticatedContent: FC = () => {
-  const keyPair = api.auth.createPrivateKey.useQuery({});
+  const keyPairQuery = api.auth.createPrivateKey.useQuery();
 
   const [privateKey, setPrivateKey] = useState('');
   const handleTextAreaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -23,7 +23,7 @@ const UnauthenticatedContent: FC = () => {
   }, [privateKey]);
 
   const handleGenerateButtonClick = useCallback(async () => {
-    const privateKey = keyPair.data;
+    const privateKey = keyPairQuery.data;
 
     if (typeof privateKey !== 'string') {
       setError('Cheia privată nu a putut fi generată.');
@@ -31,8 +31,8 @@ const UnauthenticatedContent: FC = () => {
     }
 
     setPrivateKey(privateKey);
-    await keyPair.refetch();
-  }, [keyPair]);
+    await keyPairQuery.refetch();
+  }, [keyPairQuery]);
 
   return (
     <>

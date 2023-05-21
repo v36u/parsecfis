@@ -27,7 +27,7 @@ declare module 'next-auth/jwt' {
   }
 }
 
-export const authOptions: NextAuthOptions = {
+export const nextAuthOptions: NextAuthOptions = {
   providers: [
     {
       id: 'private-key',
@@ -105,5 +105,5 @@ export const authOptions: NextAuthOptions = {
 };
 
 export const getServerAuthSession = (ctx: { req: GetServerSidePropsContext['req']; res: GetServerSidePropsContext['res'] }) => {
-  return getServerSession(ctx.req, ctx.res, authOptions);
+  return getServerSession(ctx.req, ctx.res, nextAuthOptions);
 };
