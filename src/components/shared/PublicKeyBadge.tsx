@@ -1,18 +1,23 @@
 import { faCheck, faCopy, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useCallback, useState, type FC } from 'react';
+import { useCallback, useEffect, useState, type FC } from 'react';
 
 type Props = {
   publicKey: string;
 };
 
 const PublicKeyBadge: FC<Props> = ({ publicKey }) => {
+  const [actualPublicKey, setActualPublicKey] = useState(publicKey);
+  useEffect(() => {
+    setActualPublicKey(publicKey);
+  }, [publicKey]);
+
   const [copyButtonIcon, setCopyButtonIcon] = useState<IconDefinition>(faCopy);
 
-  const shortenedPublicKey = `...${publicKey.slice(-16)}`;
+  const shortenedPublicKey = `...${actualPublicKey.slice(-16)}`;
 
   const handleCopyButtonClick = useCallback(async () => {
-    await navigator.clipboard.writeText(publicKey);
+    await navigator.clipboard.writeText(actualPublicKey);
 
     setCopyButtonIcon(faCheck);
     const checkTimeout = setTimeout(() => {
@@ -22,7 +27,7 @@ const PublicKeyBadge: FC<Props> = ({ publicKey }) => {
     return () => {
       clearTimeout(checkTimeout);
     };
-  }, [publicKey]);
+  }, [actualPublicKey]);
 
   return (
     <div className="inline-flex italic">

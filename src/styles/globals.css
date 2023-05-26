@@ -29,3 +29,11 @@ main span,
 main button {
   @apply relative z-10;
 }
+
+.is-loading {
+  pointer-events: none;
+}
+
+.is-loading > *:not(.loading-spinner) {
+  opacity: 0.2;
+}

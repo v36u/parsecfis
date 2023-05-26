@@ -75,7 +75,7 @@ const AuthenticatedContent: FC = () => {
           className={classNames(
             'dark:hover:bg-bray-800 flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500 dark:hover:bg-gray-600',
             {
-              'border-blue-400 bg-blue-100': dragging,
+              'border-purple-600 bg-purple-100': dragging,
               'border-gray-300 bg-gray-50': !dragging,
             },
           )}
