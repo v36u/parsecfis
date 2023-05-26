@@ -1,16 +1,9 @@
 import classNames from 'classnames';
-import { signOut } from 'next-auth/react';
 import { useCallback, useEffect, useState, type ChangeEvent, type FC } from 'react';
 
 let dragCounter = 0;
 
-const AuthenticatedContent: FC = () => {
-  const handleLogoutButtonClick = async () => {
-    await signOut({
-      redirect: false,
-    });
-  };
-
+const AuthenticatedHomeContent: FC = () => {
   const [file, setFile] = useState<File | undefined>(undefined);
   const handleFileChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     const { files } = event.target;
@@ -121,16 +114,8 @@ const AuthenticatedContent: FC = () => {
           />
         </label>
       </div>
-      <button
-        className="group relative mt-96 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 p-0.5 text-sm font-medium text-gray-900 hover:text-slate-50 focus:outline-none focus:ring-4 focus:ring-purple-300 group-hover:from-purple-600 group-hover:to-blue-500 dark:text-slate-50 dark:focus:ring-blue-800"
-        onClick={handleLogoutButtonClick}
-      >
-        <span className="relative rounded-md bg-slate-50 px-5 py-2.5 transition-all duration-75 ease-in group-hover:bg-opacity-0 dark:bg-gray-900">
-          Deconectare
-        </span>
-      </button>
     </>
   );
 };
 
-export default AuthenticatedContent;
+export default AuthenticatedHomeContent;

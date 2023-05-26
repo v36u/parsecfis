@@ -2,7 +2,7 @@ import { signIn } from 'next-auth/react';
 import { useCallback, useState, type ChangeEvent, type FC } from 'react';
 import { api } from '~/utils/api';
 
-const UnauthenticatedContent: FC = () => {
+const UnauthenticatedHomeContent: FC = () => {
   const keyPairQuery = api.auth.createPrivateKey.useQuery();
 
   const [privateKey, setPrivateKey] = useState('');
@@ -46,7 +46,7 @@ const UnauthenticatedContent: FC = () => {
       <textarea
         id="private-key"
         rows={6}
-        className="block w-9/12 rounded-lg border border-gray-300 bg-slate-100 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-slate-50 dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500 md:w-7/12 lg:w-5/12 xl:w-3/12"
+        className="block w-9/12 rounded-lg border border-gray-300 bg-slate-100 p-2.5 text-sm text-gray-900 focus:border-purple-500 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700 dark:text-slate-50 dark:placeholder-gray-400 dark:focus:border-purple-500 dark:focus:ring-purple-500 md:w-7/12 lg:w-5/12 xl:w-3/12"
         placeholder="Introdu cheia privată aici..."
         value={privateKey}
         onChange={handleTextAreaChange}
@@ -71,4 +71,4 @@ const UnauthenticatedContent: FC = () => {
   );
 };
 
-export default UnauthenticatedContent;
+export default UnauthenticatedHomeContent;

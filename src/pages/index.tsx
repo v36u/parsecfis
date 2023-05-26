@@ -1,8 +1,8 @@
 import { type NextPage } from 'next';
 import { useSession } from 'next-auth/react';
 import Head from 'next/head';
-import AuthenticatedContent from '~/components/home/AuthenticatedContent';
-import UnauthenticatedContent from '~/components/home/UnauthenticatedContent';
+import AuthenticatedHomeContent from '~/components/home/AuthenticatedHomeContent';
+import UnauthenticatedHomeContent from '~/components/home/UnauthenticatedHomeContent';
 
 const HomePage: NextPage = () => {
   const session = useSession();
@@ -14,8 +14,8 @@ const HomePage: NextPage = () => {
       </Head>
 
       <div className="flex flex-col items-center justify-center">
-        {session.status === 'unauthenticated' && <UnauthenticatedContent />}
-        {session.status === 'authenticated' && <AuthenticatedContent />}
+        {session.status === 'unauthenticated' && <UnauthenticatedHomeContent />}
+        {session.status === 'authenticated' && <AuthenticatedHomeContent />}
       </div>
     </>
   );
