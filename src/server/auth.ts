@@ -56,13 +56,12 @@ export const nextAuthOptions: NextAuthOptions = {
             })
             .toString('hex');
 
+          // Adăugăm un nou user dacă nu există deja
           const user = await prisma.user.upsert({
             where: {
               publicKey,
             },
-            update: {
-              lastLoggedInAt: new Date(),
-            },
+            update: {},
             create: {
               publicKey,
             },

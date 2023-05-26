@@ -1,3 +1,5 @@
+import { faCheck, faCopy, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useCallback, useState, type FC } from 'react';
 
 type Props = {
@@ -5,16 +7,16 @@ type Props = {
 };
 
 const PublicKeyBadge: FC<Props> = ({ publicKey }) => {
-  const [copyButtonIcon, setCopyButtonIcon] = useState<'fa-regular fa-copy' | 'fa-regular fa-check-circle'>('fa-regular fa-copy');
+  const [copyButtonIcon, setCopyButtonIcon] = useState<IconDefinition>(faCopy);
 
   const shortenedPublicKey = `...${publicKey.slice(-16)}`;
 
   const handleCopyButtonClick = useCallback(async () => {
     await navigator.clipboard.writeText(publicKey);
 
-    setCopyButtonIcon('fa-regular fa-check-circle');
+    setCopyButtonIcon(faCheck);
     const checkTimeout = setTimeout(() => {
-      setCopyButtonIcon('fa-regular fa-copy');
+      setCopyButtonIcon(faCopy);
     }, 1500);
 
     return () => {
@@ -31,10 +33,10 @@ const PublicKeyBadge: FC<Props> = ({ publicKey }) => {
         type="button"
         title="Copiază cheia publică în clipboard"
         className="py-gap-0.5.5 mr-2 rounded border border-purple-900 bg-yellow-100 px-1 text-xs font-medium text-purple-800 dark:bg-gray-700 dark:text-purple-400"
-        disabled={copyButtonIcon === 'fa-regular fa-check-circle'}
+        disabled={copyButtonIcon.iconName === faCheck.iconName}
         onClick={handleCopyButtonClick}
       >
-        <i className={copyButtonIcon} />
+        <FontAwesomeIcon icon={copyButtonIcon} />
       </button>
     </div>
   );

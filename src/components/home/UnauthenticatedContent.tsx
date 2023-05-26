@@ -19,6 +19,7 @@ const UnauthenticatedContent: FC = () => {
 
     if (response?.error) {
       setError(response.error);
+      return;
     }
   }, [privateKey]);
 

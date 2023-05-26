@@ -9,14 +9,13 @@ datasource db {
 }
 
 model User {
-    id             Int         @id @default(autoincrement())
-    publicKey      String      @unique
-    email          String?     @unique
-    name           String?
-    registeredAt   DateTime    @default(now())
-    lastLoggedInAt DateTime    @default(now())
-    sentFiles      File[]
-    receivedFiles  FileShare[]
+    id            Int         @id @default(autoincrement())
+    publicKey     String      @unique
+    email         String?     @unique
+    name          String?
+    registeredAt  DateTime    @default(now())
+    sentFiles     File[]
+    receivedFiles FileShare[]
 }
 
 model File {

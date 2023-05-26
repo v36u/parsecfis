@@ -1,11 +1,42 @@
-import { type FC } from 'react';
+import { faCheck, faEllipsisH, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import classNames from 'classnames';
+import { useEffect, useState, type ChangeEvent, type FC } from 'react';
+import { api } from '~/utils/api';
+import { useDebouncedCallback } from '~/utils/hooks/useDebouncedCallback';
 
 type Props = {
-  label: string;
   field: string;
+  label: string;
+  placeholder: string;
+  defaultValue: string;
+  icon: IconDefinition;
 };
 
-const ProfileInput: FC<Props> = ({ label, field }) => {
+const ProfileInput: FC<Props> = ({ field, label, defaultValue, icon, placeholder }) => {
+  const updateMutation = api.user.updateUserField.useMutation();
+  const [debouncedUpdateMutation, isUpdateLoading, isUpdateDone] = useDebouncedCallback({
+    callback: updateMutation.mutateAsync,
+    delay: 3e3,
+  });
+
+  let inputIcon = icon;
+  if (isUpdateLoading) {
+    inputIcon = faEllipsisH;
+  } else if (isUpdateDone) {
+    inputIcon = faCheck;
+  }
+
+  const [value, setValue] = useState(defaultValue);
+  useEffect(() => {
+    setValue(defaultValue);
+  }, [defaultValue]);
+
+  const handleOnChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    setValue(event.target.value);
+    await debouncedUpdateMutation({ fieldName: field, fieldValue: event.target.value });
+  };
+
   return (
     <>
       <label
@@ -14,24 +45,23 @@ const ProfileInput: FC<Props> = ({ label, field }) => {
       >
         {label}
       </label>
-      <div className="relative mb-6">
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-          <svg
-            aria-hidden="true"
-            className="h-5 w-5 text-gray-500 dark:text-gray-400"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
-            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
-          </svg>
+      <div className="relative z-10 mb-6">
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-20 flex items-center pl-3">
+          <FontAwesomeIcon
+            className={classNames({
+              'fa-bounce': inputIcon.iconName === faEllipsisH.iconName,
+              'fa-beat-fade': inputIcon.iconName === faCheck.iconName,
+            })}
+            icon={inputIcon}
+          />
         </div>
         <input
           type="text"
-          id="input-group-1"
-          className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500  dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-          placeholder="name@flowbite.com"
+          value={value}
+          id={`input-group-${field}`}
+          className="block w-full rounded-lg border-0 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 focus:ring-0 focus:ring-offset-0  dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+          placeholder={placeholder}
+          onChange={handleOnChange}
         />
       </div>
     </>
