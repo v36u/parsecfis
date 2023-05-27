@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import type { GetServerSideProps, NextPage } from 'next';
 import { getServerSession } from 'next-auth';
 import Head from 'next/head';
-import ProfileInput from '~/components/profile/ProfileInput';
+import ProfileInput, { type ProfileInputMutation } from '~/components/profile/ProfileInput';
 import LoadingSpinner from '~/components/shared/LoadingSpinner';
 import PublicKeyBadge from '~/components/shared/PublicKeyBadge';
 import { nextAuthOptions } from '~/server/auth';
@@ -38,6 +38,7 @@ export const ProfilePage: NextPage = () => {
             Adresă: <PublicKeyBadge publicKey={data?.publicKey ?? ''} />
           </h3>
           <ProfileInput
+            mutation={api.user.updateUserName.useMutation() as ProfileInputMutation}
             field="name"
             label="Nume"
             placeholder="Ex: Ion Popescu"
@@ -45,6 +46,7 @@ export const ProfilePage: NextPage = () => {
             icon={faUser}
           />
           <ProfileInput
+            mutation={api.user.updateUserEmail.useMutation() as ProfileInputMutation}
             field="email"
             label="Email"
             placeholder="Ex: ion.popescu@email.com"

@@ -1,20 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 
-type UseDebouncedCallbackArgs<A extends unknown[], R> = {
-  callback: (...args: A) => Promise<R>;
+type UseDebouncedCallbackArgs<A extends unknown[]> = {
+  callback: (...args: A) => void;
   delay: number;
 };
 
-type UseDebouncedCallbackResult<A extends unknown[], R> = [(...args: A) => Promise<R>, boolean, boolean];
+type UseDebouncedCallbackResult<A extends unknown[]> = [(...args: A) => void, boolean];
 
-type UseDebouncedCallback = <A extends unknown[], R>(args: UseDebouncedCallbackArgs<A, R>) => UseDebouncedCallbackResult<A, R>;
+type UseDebouncedCallback = <A extends unknown[]>(args: UseDebouncedCallbackArgs<A>) => UseDebouncedCallbackResult<A>;
 
 export const useDebouncedCallback: UseDebouncedCallback = ({ callback, delay }) => {
   const functionTimeoutHandler = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debouncedFunction = useRef(callback);
+
   const [isLoading, setIsLoading] = useState(false);
-  const [isDone, setIsDone] = useState(false);
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   useEffect(() => {
     debouncedFunction.current = callback;
@@ -30,32 +29,16 @@ export const useDebouncedCallback: UseDebouncedCallback = ({ callback, delay }) 
     [],
   );
 
-  const debouncedCallback: typeof callback = (...args) =>
-    new Promise((resolve, reject) => {
-      setIsLoading(true);
-      if (functionTimeoutHandler.current) {
-        clearTimeout(functionTimeoutHandler.current);
-      }
-      functionTimeoutHandler.current = setTimeout(() => {
-        try {
-          resolve(debouncedFunction.current(...args));
-          setIsLoading(false);
-          setHasLoadedOnce(true);
-        } catch (error) {
-          reject(error);
-        }
-      }, delay);
-    });
-
-  useEffect(() => {
-    if (!hasLoadedOnce || isLoading) {
-      return;
+  const debouncedCallback: typeof callback = (...args) => {
+    setIsLoading(true);
+    if (functionTimeoutHandler.current) {
+      clearTimeout(functionTimeoutHandler.current);
     }
-    setIsDone(true);
-    setTimeout(() => {
-      setIsDone(false);
-    }, 1e3);
-  }, [hasLoadedOnce, isLoading]);
+    functionTimeoutHandler.current = setTimeout(() => {
+      debouncedFunction.current(...args);
+      setIsLoading(false);
+    }, delay);
+  };
 
-  return [debouncedCallback, isLoading, isDone];
+  return [debouncedCallback, isLoading];
 };

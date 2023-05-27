@@ -1,3 +1,4 @@
+import { TRPCError } from '@trpc/server';
 import { type Session } from 'next-auth';
 import { z } from 'zod';
 import { createTRPCRouter, publicProcedure } from '../trpc';
@@ -21,22 +22,49 @@ export const userRouter = createTRPCRouter({
     });
     return user;
   }),
-  updateUserField: publicProcedure
+  updateUserEmail: publicProcedure
     .input(
       z.object({
-        fieldName: z.string(),
-        fieldValue: z.string(),
+        email: z.string().email('Această adresă de email nu este validă.'),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const publicKey = getPublicKeyWithGuard(ctx.session);
+      const match = await ctx.prisma.user.findUnique({
+        where: {
+          email: input.email,
+        },
+      });
+      if (match) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'Această adresă de email este deja utilizată.',
+        });
+      }
 
+      const publicKey = getPublicKeyWithGuard(ctx.session);
       await ctx.prisma.user.update({
         where: {
           publicKey,
         },
         data: {
-          [input.fieldName]: input.fieldValue,
+          email: input.email,
+        },
+      });
+    }),
+  updateUserName: publicProcedure
+    .input(
+      z.object({
+        name: z.string().min(3, 'Acest nume nu este valid.'),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const publicKey = getPublicKeyWithGuard(ctx.session);
+      await ctx.prisma.user.update({
+        where: {
+          publicKey,
+        },
+        data: {
+          name: input.name,
         },
       });
     }),
