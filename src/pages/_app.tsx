@@ -1,6 +1,7 @@
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import { config as faConfig } from '@fortawesome/fontawesome-svg-core';
 import '@fortawesome/fontawesome-svg-core/styles.css';
+import { Analytics } from '@vercel/analytics/react';
 import 'flowbite';
 import { type Session } from 'next-auth';
 import { SessionProvider } from 'next-auth/react';
@@ -26,6 +27,7 @@ const MyApp: AppType<{ session: Session | null }> = ({ Component, pageProps: { s
           href="/favicon.ico"
         />
       </Head>
+      <Analytics />
       <AppParticles />
       <SessionProvider session={session}>
         <Navigation />
