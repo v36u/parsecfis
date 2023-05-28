@@ -10,7 +10,7 @@ type UseDebouncedCallbackResult<A extends unknown[]> = [(...args: A) => void, bo
 type UseDebouncedCallback = <A extends unknown[]>(args: UseDebouncedCallbackArgs<A>) => UseDebouncedCallbackResult<A>;
 
 export const useDebouncedCallback: UseDebouncedCallback = ({ callback, delay }) => {
-  const functionTimeoutHandler = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const functionTimeoutHandler = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const debouncedFunction = useRef(callback);
 
   const [isLoading, setIsLoading] = useState(false);

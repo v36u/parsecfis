@@ -1,19 +1,11 @@
 import { TRPCError } from '@trpc/server';
-import { type Session } from 'next-auth';
 import { z } from 'zod';
+import { getUserKeysWithGuard } from '~/utils/helper/auth';
 import { createTRPCRouter, publicProcedure } from '../trpc';
-
-const getPublicKeyWithGuard = (session: Session | null) => {
-  const publicKey = session?.user.publicKey;
-  if (!publicKey) {
-    throw new Error('Cheia publica nu există în sesiune.');
-  }
-  return publicKey;
-};
 
 export const userRouter = createTRPCRouter({
   fetchUserWithGuard: publicProcedure.query(async ({ ctx }) => {
-    const publicKey = getPublicKeyWithGuard(ctx.session);
+    const { publicKey } = getUserKeysWithGuard(ctx.session);
 
     const user = await ctx.prisma.user.findUniqueOrThrow({
       where: {
@@ -41,7 +33,7 @@ export const userRouter = createTRPCRouter({
         });
       }
 
-      const publicKey = getPublicKeyWithGuard(ctx.session);
+      const { publicKey } = getUserKeysWithGuard(ctx.session);
       await ctx.prisma.user.update({
         where: {
           publicKey,
@@ -58,7 +50,7 @@ export const userRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const publicKey = getPublicKeyWithGuard(ctx.session);
+      const { publicKey } = getUserKeysWithGuard(ctx.session);
       await ctx.prisma.user.update({
         where: {
           publicKey,

@@ -9,21 +9,25 @@ declare module 'next-auth' {
   interface Session extends DefaultSession {
     user: {
       publicKey: string;
+      privateKey: string;
     };
   }
 
   interface User {
     publicKey: string;
+    privateKey: string;
   }
 
   interface Profile {
     publicKey: string;
+    privateKey: string;
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
     publicKey: string;
+    privateKey: string;
   }
 }
 
@@ -56,7 +60,7 @@ export const nextAuthOptions: NextAuthOptions = {
             })
             .toString('hex');
 
-          // Adăugăm un nou user dacă nu există deja
+          // Adăugăm un nou utilizator dacă nu există deja
           const user = await prisma.user.upsert({
             where: {
               publicKey,
@@ -70,6 +74,7 @@ export const nextAuthOptions: NextAuthOptions = {
           const authenticatedUser: User = {
             id: user.id.toString(),
             publicKey,
+            privateKey: credentials.privateKey,
           };
 
           return authenticatedUser;
@@ -94,10 +99,12 @@ export const nextAuthOptions: NextAuthOptions = {
       }
 
       token.publicKey = user.publicKey;
+      token.privateKey = user.privateKey;
       return token;
     },
     session({ session, token }) {
       session.user.publicKey = token.publicKey;
+      session.user.privateKey = token.privateKey;
       return session;
     },
   },

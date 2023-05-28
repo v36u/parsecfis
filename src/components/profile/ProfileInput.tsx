@@ -4,12 +4,9 @@ import { type UseMutationResult } from '@tanstack/react-query';
 import classNames from 'classnames';
 import { useEffect, useState, type ChangeEvent, type FC } from 'react';
 import { useDebouncedCallback } from '~/utils/hooks/useDebouncedCallback';
+import { useParsecfisError } from '~/utils/hooks/useParsecfisError';
 
 export type ProfileInputMutation = UseMutationResult;
-
-type WithMessage = {
-  message: string;
-};
 
 type Props = {
   mutation: ProfileInputMutation;
@@ -21,14 +18,22 @@ type Props = {
 };
 
 const ProfileInput: FC<Props> = ({ mutation, field, label, defaultValue, icon, placeholder }) => {
-  const { mutate, isError, error, isSuccess } = mutation;
+  const { mutate, isError, error, isSuccess, failureCount } = mutation;
+
   const [debouncedMutation, isLoading] = useDebouncedCallback({
     callback: mutate,
     delay: 2.5e3,
   });
 
-  const [value, setValue] = useState(defaultValue);
+  const { processedError: processedUpdateError } = useParsecfisError({ error });
   const [updateError, setUpdateError] = useState('');
+  useEffect(() => {
+    if (isError) {
+      setUpdateError(processedUpdateError);
+    }
+  }, [processedUpdateError, failureCount, isError]);
+
+  const [value, setValue] = useState(defaultValue);
 
   useEffect(() => {
     setValue(defaultValue);
@@ -41,22 +46,6 @@ const ProfileInput: FC<Props> = ({ mutation, field, label, defaultValue, icon, p
     setValue(eventValue);
     debouncedMutation({ [field]: eventValue });
   };
-
-  useEffect(() => {
-    if (!error) {
-      return;
-    }
-
-    const { message: errorMessage } = error as WithMessage;
-
-    try {
-      const deserializedErrors = JSON.parse(errorMessage) as Array<Record<string, unknown>>;
-      const deserializedErrorMessage = (deserializedErrors[0] as WithMessage).message;
-      setUpdateError(deserializedErrorMessage);
-    } catch (_) {
-      setUpdateError(errorMessage);
-    }
-  }, [error]);
 
   const [inputIcon, setInputIcon] = useState(icon);
   useEffect(() => {
@@ -107,7 +96,7 @@ const ProfileInput: FC<Props> = ({ mutation, field, label, defaultValue, icon, p
           onChange={handleOnChange}
         />
       </div>
-      <div className="mt-1 bg-gradient-to-br from-red-600 to-red-500 bg-clip-text text-sm font-bold text-transparent">{updateError}</div>
+      <div className="mt-1 bg-gradient-to-br from-red-800 to-red-500 bg-clip-text text-sm font-bold text-transparent">{updateError}</div>
     </div>
   );
 };

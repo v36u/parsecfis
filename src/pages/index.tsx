@@ -10,7 +10,7 @@ const HomePage: NextPage = () => {
   return (
     <>
       <Head>
-        <title>Acasă &mdash; Parsecfis</title>
+        <title>Parsecfis</title>
       </Head>
 
       <div className="flex flex-col items-center justify-center">
