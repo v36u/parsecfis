@@ -1,12 +1,15 @@
+import { TRPCError } from '@trpc/server';
+import { createECDH, createPrivateKey } from 'crypto';
 import { z } from 'zod';
 import { getUserKeysWithGuard } from '~/utils/helper/auth';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 
 export const fileRouter = createTRPCRouter({
-  createFile: publicProcedure
+  sendFile: publicProcedure
     .input(
       z.object({
-        receiverIdentifier: z.string().length(192, 'Acest identificator este invalid.').or(z.string().email('Acest identificator este invalid.')),
+        // TODO: Make '04' standard prefix
+        receiverIdentifier: z.string().length(130, 'Acest identificator este invalid.').or(z.string().email('Acest identificator este invalid.')),
         fileName: z.string(),
         fileType: z.string(),
       }),
@@ -25,15 +28,34 @@ export const fileRouter = createTRPCRouter({
         },
       });
       if (!receiver) {
-        return;
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Acest identificator nu este atribuit unui cont.',
+        });
       }
 
-      const { privateKey: senderPrivateKey } = getUserKeysWithGuard(ctx.session);
+      const senderEcdh = createECDH('secp256k1');
+      const { privateKeyPem: senderPrivateKeyPem } = getUserKeysWithGuard(ctx.session);
+      senderEcdh.setPrivateKey(
+        createPrivateKey(senderPrivateKeyPem).export({
+          type: 'sec1',
+          format: 'der',
+        }),
+      );
 
-      // await ctx.prisma.file.create({
-      //   data: {
-      //     senderKey,
-      //   },
+      // const receiverPublicKeyBuffer = createPublicKey({
+      //   key: Buffer.from(receiver.publicKey, 'hex'),
+      //   type: 'spki',
+      //   format: 'pem',
+      // }).export({
+      //   type: 'spki',
+      //   format: 'der',
       // });
+
+      // const symmetricKey = senderEcdh.computeSecret(receiverPublicKeyBuffer).toString('hex');
+
+      // return {
+      //   symmetricKey,
+      // };
     }),
 });

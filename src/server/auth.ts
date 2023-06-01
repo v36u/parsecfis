@@ -1,5 +1,5 @@
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
-import { createPublicKey } from 'crypto';
+import { createECDH } from 'crypto';
 import { type GetServerSidePropsContext } from 'next';
 import { getServerSession, type DefaultSession, type NextAuthOptions, type User } from 'next-auth';
 import { env } from '~/env.mjs';
@@ -47,18 +47,15 @@ export const nextAuthOptions: NextAuthOptions = {
         if (!credentials?.privateKey) {
           throw new Error('Cheia privată nu a fost furnizată.');
         }
+        if (credentials.privateKey.length !== 64) {
+          throw new Error('Această cheie privată este invalidă.');
+        }
 
         try {
-          const publicKey = createPublicKey({
-            key: credentials.privateKey,
-            type: 'spki',
-            format: 'pem',
-          })
-            .export({
-              type: 'spki',
-              format: 'der',
-            })
-            .toString('hex');
+          const ecdh = createECDH('secp256k1');
+          ecdh.setPrivateKey(Buffer.from(credentials.privateKey, 'hex'));
+
+          const publicKey = ecdh.getPublicKey('hex');
 
           // Adăugăm un nou utilizator dacă nu există deja
           const user = await prisma.user.upsert({

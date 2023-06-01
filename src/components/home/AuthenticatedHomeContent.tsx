@@ -15,7 +15,7 @@ const AuthenticatedHomeContent: FC = () => {
     failureCount: createFileFailureCount,
     isError: isCreateFileError,
     data: createFileData,
-  } = api.file.createFile.useMutation();
+  } = api.file.sendFile.useMutation();
   const { processedError: processedReceiverError } = useParsecfisError({ error: createFileError });
   const [receiverError, setReceiverError] = useState('');
   useEffect(() => {
@@ -121,7 +121,7 @@ const AuthenticatedHomeContent: FC = () => {
           value={receiverIdentifier}
           id="input-group-receiver"
           className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-purple-600 focus:ring-0 focus:ring-purple-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
-          placeholder="Cheie publică de 192 de caractere sau o adresă de email validă..."
+          placeholder="Cheie publică de 130 de caractere sau o adresă de email validă..."
           onChange={handleReceiverChange}
         />
       </div>

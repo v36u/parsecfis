@@ -6,7 +6,7 @@ const UnauthenticatedHomeContent: FC = () => {
   const keyPairQuery = api.auth.createPrivateKey.useQuery();
 
   const [privateKey, setPrivateKey] = useState('');
-  const handleTextAreaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+  const handleTextAreaChange = (event: ChangeEvent<HTMLInputElement>) => {
     setPrivateKey(event.target.value);
   };
 
@@ -47,14 +47,14 @@ const UnauthenticatedHomeContent: FC = () => {
       >
         Cheia privată
       </label>
-      <textarea
+      <input
         id="private-key"
-        rows={6}
-        className="block w-9/12 rounded-lg border border-gray-300 bg-slate-100 p-2.5 text-sm text-gray-900 focus:border-purple-500 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700 dark:text-slate-50 dark:placeholder-gray-400 dark:focus:border-purple-500 dark:focus:ring-purple-500 md:w-7/12 lg:w-5/12 xl:w-3/12"
+        type="text"
+        className="block w-9/12 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-purple-600 focus:ring-purple-600 dark:border-gray-600 dark:bg-gray-700 dark:text-slate-50 dark:placeholder-gray-400 dark:focus:border-purple-500 dark:focus:ring-purple-500 md:w-7/12 lg:w-5/12 xl:w-3/12"
         placeholder="Introdu cheia privată aici..."
         value={privateKey}
         onChange={handleTextAreaChange}
-      ></textarea>
+      />
       <div className="text-md bg-gradient-to-br from-red-800 to-red-500 bg-clip-text font-bold text-transparent">{error}</div>
       <button
         type="button"
