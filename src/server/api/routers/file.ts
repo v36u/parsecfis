@@ -1,15 +1,22 @@
+import { S3 } from '@aws-sdk/client-s3';
+import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { TRPCError } from '@trpc/server';
-import { createECDH, createPrivateKey } from 'crypto';
+import { createECDH, randomUUID } from 'crypto';
 import { z } from 'zod';
-import { getUserKeysWithGuard } from '~/utils/helper/auth';
+import { env } from '~/env.mjs';
+import { maxFileSizeInBytes } from '~/utils/constants';
+import { getUserKeysWithGuard } from '~/utils/helpers/auth';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 
 export const fileRouter = createTRPCRouter({
   sendFile: publicProcedure
     .input(
       z.object({
-        // TODO: Make '04' standard prefix
-        receiverIdentifier: z.string().length(130, 'Acest identificator este invalid.').or(z.string().email('Acest identificator este invalid.')),
+        receiverIdentifier: z
+          .string()
+          .length(130, 'Acest identificator este invalid.')
+          .startsWith('04', 'Acest identificator este invalid.')
+          .or(z.string().email('Acest identificator este invalid.')),
         fileName: z.string(),
         fileType: z.string(),
       }),
@@ -35,27 +42,25 @@ export const fileRouter = createTRPCRouter({
       }
 
       const senderEcdh = createECDH('secp256k1');
-      const { privateKeyPem: senderPrivateKeyPem } = getUserKeysWithGuard(ctx.session);
-      senderEcdh.setPrivateKey(
-        createPrivateKey(senderPrivateKeyPem).export({
-          type: 'sec1',
-          format: 'der',
-        }),
-      );
+      const { privateKey: senderPrivateKey } = getUserKeysWithGuard(ctx.session);
+      senderEcdh.setPrivateKey(Buffer.from(senderPrivateKey, 'hex'));
 
-      // const receiverPublicKeyBuffer = createPublicKey({
-      //   key: Buffer.from(receiver.publicKey, 'hex'),
-      //   type: 'spki',
-      //   format: 'pem',
-      // }).export({
-      //   type: 'spki',
-      //   format: 'der',
-      // });
+      const symmetricKey = senderEcdh.computeSecret(Buffer.from(receiver.publicKey, 'hex')).toString('hex');
 
-      // const symmetricKey = senderEcdh.computeSecret(receiverPublicKeyBuffer).toString('hex');
+      const s3 = new S3({});
+      const presignedPost = await createPresignedPost(s3, {
+        Key: randomUUID(),
+        Bucket: env.AWS_S3_BUCKET_NAME,
+        Fields: {
+          'Content-Type': input.fileType,
+        },
+        Expires: 5, // secunde
+        Conditions: [['content-length-range', 0, maxFileSizeInBytes]],
+      });
 
-      // return {
-      //   symmetricKey,
-      // };
+      return {
+        symmetricKey,
+        presignedPost,
+      };
     }),
 });

@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { getUserKeysWithGuard } from '~/utils/helper/auth';
+import { getUserKeysWithGuard } from '~/utils/helpers/auth';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 
 export const userRouter = createTRPCRouter({

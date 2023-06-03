@@ -2,7 +2,9 @@ import { faSatelliteDish } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import classNames from 'classnames';
 import { useCallback, useEffect, useState, type ChangeEvent, type FC } from 'react';
+import { maxFileSizeInBytes } from '~/server/api/routers/file';
 import { api } from '~/utils/api';
+import { getFormattedFileSize } from '~/utils/helpers/file';
 import { useParsecfisError } from '~/utils/hooks/useParsecfisError';
 
 let dragCounter = 0;
@@ -97,10 +99,15 @@ const AuthenticatedHomeContent: FC = () => {
       setFileError('Trebuie să selectezi un fișier.');
       return;
     }
+    if (file.size > maxFileSizeInBytes) {
+      setFileError(`Fișierul depășește limita de ${getFormattedFileSize(maxFileSizeInBytes)}.`);
+      return;
+    }
 
-    mutate({
-      file,
+    createFile({
       receiverIdentifier,
+      fileName: file.name,
+      fileType: file.type,
     });
   };
 
@@ -167,7 +174,7 @@ const AuthenticatedHomeContent: FC = () => {
               {file && (
                 <p className="text-md mt-12 text-gray-500 dark:text-gray-400">
                   <small>Fișierul selectat: </small>
-                  <span className="font-semibold">{file.name}</span> <small>({file.size} B)</small>
+                  <span className="font-semibold">{file.name}</span> <small>({getFormattedFileSize(file.size)})</small>
                 </p>
               )}
             </>
