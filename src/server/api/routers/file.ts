@@ -1,11 +1,12 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { TRPCError } from '@trpc/server';
-import { createECDH, randomUUID } from 'crypto';
+import { createECDH } from 'crypto';
 import { z } from 'zod';
 import { env } from '~/env.mjs';
 import { maxFileSizeInBytes } from '~/utils/constants';
 import { getUserKeysWithGuard } from '~/utils/helpers/auth';
+import { encrypt } from '~/utils/helpers/encryption';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 
 export const fileRouter = createTRPCRouter({
@@ -22,6 +23,18 @@ export const fileRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const { privateKey: senderPrivateKey, publicKey: senderPublicKey } = getUserKeysWithGuard(ctx.session);
+      const sender = await ctx.prisma.user.findFirst({
+        where: {
+          publicKey: senderPublicKey,
+        },
+      });
+      if (!sender) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'A intervenit o eroare. Te rugăm să te reautentifici.',
+        });
+      }
       const receiver = await ctx.prisma.user.findFirst({
         where: {
           OR: [
@@ -42,20 +55,41 @@ export const fileRouter = createTRPCRouter({
       }
 
       const senderEcdh = createECDH('secp256k1');
-      const { privateKey: senderPrivateKey } = getUserKeysWithGuard(ctx.session);
       senderEcdh.setPrivateKey(Buffer.from(senderPrivateKey, 'hex'));
 
       const symmetricKey = senderEcdh.computeSecret(Buffer.from(receiver.publicKey, 'hex')).toString('hex');
 
       const s3 = new S3({});
       const presignedPost = await createPresignedPost(s3, {
-        Key: randomUUID(),
+        Key: encrypt(input.fileName, symmetricKey),
         Bucket: env.AWS_S3_BUCKET_NAME,
         Fields: {
           'Content-Type': input.fileType,
         },
         Expires: 5, // secunde
         Conditions: [['content-length-range', 0, maxFileSizeInBytes]],
+      });
+
+      const presignedPostKey = presignedPost.fields.key;
+      if (!presignedPostKey) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'A intervenit o eroare. Te rugăm să reîncerci.',
+        });
+      }
+
+      const file = await ctx.prisma.file.create({
+        data: {
+          senderId: sender.id,
+          s3Key: presignedPostKey,
+        },
+      });
+
+      await ctx.prisma.fileShare.create({
+        data: {
+          fileId: file.id,
+          receiverId: receiver.id,
+        },
       });
 
       return {

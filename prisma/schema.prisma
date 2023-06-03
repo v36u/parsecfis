@@ -19,12 +19,11 @@ model User {
 }
 
 model File {
-    id           Int         @id @default(autoincrement())
-    senderId     Int         @unique
-    s3Ref        String      @unique
-    originalName String
-    sender       User        @relation(fields: [senderId], references: [id])
-    shares       FileShare[]
+    id       Int         @id @default(autoincrement())
+    senderId Int         @unique
+    s3Key    String      @unique
+    sender   User        @relation(fields: [senderId], references: [id])
+    shares   FileShare[]
 
     @@index([senderId])
 }

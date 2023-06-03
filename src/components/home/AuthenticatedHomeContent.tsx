@@ -2,8 +2,8 @@ import { faSatelliteDish } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import classNames from 'classnames';
 import { useCallback, useEffect, useState, type ChangeEvent, type FC } from 'react';
-import { maxFileSizeInBytes } from '~/server/api/routers/file';
 import { api } from '~/utils/api';
+import { maxFileSizeInBytes } from '~/utils/constants';
 import { getFormattedFileSize } from '~/utils/helpers/file';
 import { useParsecfisError } from '~/utils/hooks/useParsecfisError';
 
