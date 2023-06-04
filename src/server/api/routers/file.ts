@@ -10,7 +10,7 @@ import { encrypt } from '~/utils/helpers/encryption';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 
 export const fileRouter = createTRPCRouter({
-  sendFile: publicProcedure
+  shareFile: publicProcedure
     .input(
       z.object({
         receiverIdentifier: z
@@ -61,7 +61,7 @@ export const fileRouter = createTRPCRouter({
 
       const s3 = new S3({});
       const presignedPost = await createPresignedPost(s3, {
-        Key: encrypt(input.fileName, symmetricKey),
+        Key: encrypt(input.fileName, symmetricKey).toString('hex'),
         Bucket: env.AWS_S3_BUCKET_NAME,
         Fields: {
           'Content-Type': input.fileType,

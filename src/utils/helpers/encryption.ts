@@ -1,26 +1,35 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
-import invariant from 'tiny-invariant';
 
-const ivSeparator = '~' as const;
+const ivBytes = 16;
 
-export const encrypt = (text: string, key: string) => {
+/**
+ * Encrypts a string or a buffer
+ */
+export const encrypt = (input: string | Buffer, key: string) => {
+  const inputBuffer = typeof input === 'string' ? Buffer.from(input) : input;
+
+  const iv = randomBytes(ivBytes);
   const keyBuffer = Buffer.from(key, 'hex');
-  const iv = randomBytes(16);
   const cipher = createCipheriv('aes-256-cbc', keyBuffer, iv);
 
-  let encryptedTextBuffer = cipher.update(text);
-  encryptedTextBuffer = Buffer.concat([encryptedTextBuffer, cipher.final()]);
+  let encryptedInputBuffer = cipher.update(inputBuffer);
+  encryptedInputBuffer = Buffer.concat([iv, encryptedInputBuffer, cipher.final()]);
 
-  return `${iv.toString('hex')}${ivSeparator}${encryptedTextBuffer.toString('hex')}`;
+  return encryptedInputBuffer;
 };
 
-export const decrypt = (text: string, key: string) => {
+/**
+ * Decrypts a hex-encoded string or a buffer
+ */
+export const decrypt = (input: string | Buffer, key: string) => {
+  const inputBuffer = typeof input === 'string' ? Buffer.from(input, 'hex') : input;
+
   const keyBuffer = Buffer.from(key, 'hex');
-  const [iv, encryptedTextBuffer] = text.split(ivSeparator).map((v) => Buffer.from(v, 'hex'));
-  invariant(iv && encryptedTextBuffer, 'Date incomplete pentru a realiza decriptarea.');
+  const iv = inputBuffer.subarray(0, ivBytes);
   const decipher = createDecipheriv('aes-256-cbc', keyBuffer, iv);
 
-  let decryptedTextBuffer = decipher.update(encryptedTextBuffer);
+  const encryptedInputBuffer = inputBuffer.subarray(ivBytes);
+  let decryptedTextBuffer = decipher.update(encryptedInputBuffer);
   decryptedTextBuffer = Buffer.concat([decryptedTextBuffer, decipher.final()]);
 
   return decryptedTextBuffer;

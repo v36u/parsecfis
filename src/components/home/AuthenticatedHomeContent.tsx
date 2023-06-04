@@ -4,34 +4,29 @@ import classNames from 'classnames';
 import { useCallback, useEffect, useState, type ChangeEvent, type FC } from 'react';
 import { api } from '~/utils/api';
 import { maxFileSizeInBytes } from '~/utils/constants';
+import { encrypt } from '~/utils/helpers/encryption';
 import { getFormattedFileSize } from '~/utils/helpers/file';
 import { useParsecfisError } from '~/utils/hooks/useParsecfisError';
 
 let dragCounter = 0;
 
 const AuthenticatedHomeContent: FC = () => {
+  const [file, setFile] = useState<File | undefined>(undefined);
   const [receiverIdentifier, setReceiverIdentifier] = useState('');
   const {
-    mutate: createFile,
-    error: createFileError,
-    failureCount: createFileFailureCount,
-    isError: isCreateFileError,
-    data: createFileData,
-  } = api.file.sendFile.useMutation();
-  const { processedError: processedReceiverError } = useParsecfisError({ error: createFileError });
+    mutate: shareFile,
+    error: shareFileError,
+    isError: isShareFileError,
+    data: shareFileData,
+    isSuccess: isShareFileSuccess,
+  } = api.file.shareFile.useMutation();
+  const { processedError: processedReceiverError } = useParsecfisError({ error: shareFileError });
   const [receiverError, setReceiverError] = useState('');
-  useEffect(() => {
-    if (!isCreateFileError) {
-      return;
-    }
-    setReceiverError(processedReceiverError);
-  }, [processedReceiverError, createFileFailureCount, isCreateFileError]);
+  const [generalError, setGeneralError] = useState('');
   const handleReceiverChange = (event: ChangeEvent<HTMLInputElement>) => {
     setReceiverError('');
     setReceiverIdentifier(event.target.value);
   };
-
-  const [file, setFile] = useState<File | undefined>(undefined);
   const [fileError, setFileError] = useState('');
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     setFileError('');
@@ -94,6 +89,7 @@ const AuthenticatedHomeContent: FC = () => {
   const handleSendButtonClick = () => {
     setReceiverError('');
     setFileError('');
+    setGeneralError('');
 
     if (!file) {
       setFileError('Trebuie să selectezi un fișier.');
@@ -104,12 +100,72 @@ const AuthenticatedHomeContent: FC = () => {
       return;
     }
 
-    createFile({
+    shareFile({
       receiverIdentifier,
       fileName: file.name,
       fileType: file.type,
     });
   };
+
+  useEffect(() => {
+    if (isShareFileError) {
+      setReceiverError(processedReceiverError);
+      return;
+    }
+
+    if (!isShareFileSuccess) {
+      return;
+    }
+
+    if (!shareFileData || !file) {
+      setGeneralError('A intervenit o eroare. Te rugăm să reîncerci.');
+      return;
+    }
+
+    const { symmetricKey, presignedPost } = shareFileData;
+
+    const render = new FileReader();
+    render.onload = async (event) => {
+      const result = event.target?.result;
+      if (!result) {
+        setGeneralError('A intervenit o eroare. Te rugăm să reîncerci.');
+        return;
+      }
+
+      let resultBuffer: Buffer | null = null;
+      if (typeof result === 'string') {
+        resultBuffer = Buffer.from(result);
+      } else {
+        resultBuffer = Buffer.from(new Uint8Array(result));
+      }
+      const encryptedResultBuffer = encrypt(resultBuffer, symmetricKey);
+      const encryptedBlob = new Blob([encryptedResultBuffer], {
+        type: file.type,
+      });
+
+      const formData = new FormData();
+      Object.entries({ ...presignedPost.fields, file: encryptedBlob }).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+
+      try {
+        const uploadResult = await fetch(presignedPost.url, {
+          method: 'POST',
+          body: formData,
+        });
+        if (uploadResult.ok) {
+          console.log('ok');
+        } else {
+          setGeneralError('A intervenit o eroare. Te rugăm să reîncerci.');
+          console.error(await uploadResult.text());
+        }
+      } catch (_) {
+        setGeneralError('A intervenit o eroare. Te rugăm să reîncerci.');
+      }
+    };
+
+    render.readAsArrayBuffer(file);
+  }, [file, isShareFileError, isShareFileSuccess, processedReceiverError, shareFileData]);
 
   return (
     <div className="flex w-11/12 flex-col items-center justify-center md:w-9/12 lg:w-7/12 xl:w-5/12">
@@ -199,6 +255,7 @@ const AuthenticatedHomeContent: FC = () => {
           Trimite
         </span>
       </button>
+      <div className="z-10 mt-1 bg-gradient-to-br from-red-800 to-red-500 bg-clip-text text-sm font-bold text-transparent">{generalError}</div>
     </div>
   );
 };
