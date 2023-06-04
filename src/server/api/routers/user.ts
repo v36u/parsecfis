@@ -7,7 +7,7 @@ export const userRouter = createTRPCRouter({
   fetchUserWithGuard: publicProcedure.query(async ({ ctx }) => {
     const { publicKey } = getUserKeysWithGuard(ctx.session);
 
-    const user = await ctx.prisma.user.findUniqueOrThrow({
+    const user = await ctx.prisma.appUser.findUniqueOrThrow({
       where: {
         publicKey,
       },
@@ -21,7 +21,7 @@ export const userRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const match = await ctx.prisma.user.findUnique({
+      const match = await ctx.prisma.appUser.findUnique({
         where: {
           email: input.email,
         },
@@ -34,7 +34,7 @@ export const userRouter = createTRPCRouter({
       }
 
       const { publicKey } = getUserKeysWithGuard(ctx.session);
-      await ctx.prisma.user.update({
+      await ctx.prisma.appUser.update({
         where: {
           publicKey,
         },
@@ -51,7 +51,7 @@ export const userRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { publicKey } = getUserKeysWithGuard(ctx.session);
-      await ctx.prisma.user.update({
+      await ctx.prisma.appUser.update({
         where: {
           publicKey,
         },

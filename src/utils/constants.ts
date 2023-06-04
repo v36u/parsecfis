@@ -1,1 +1,1 @@
-export const maxFileSizeInBytes = 1048576;
+export const maxFileSizeInBytes = 2 * 1024 * 1024;

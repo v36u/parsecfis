@@ -24,7 +24,7 @@ export const fileRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { privateKey: senderPrivateKey, publicKey: senderPublicKey } = getUserKeysWithGuard(ctx.session);
-      const sender = await ctx.prisma.user.findFirst({
+      const sender = await ctx.prisma.appUser.findFirst({
         where: {
           publicKey: senderPublicKey,
         },
@@ -35,7 +35,7 @@ export const fileRouter = createTRPCRouter({
           message: 'A intervenit o eroare. Te rugăm să te reautentifici.',
         });
       }
-      const receiver = await ctx.prisma.user.findFirst({
+      const receiver = await ctx.prisma.appUser.findFirst({
         where: {
           OR: [
             {
@@ -78,14 +78,14 @@ export const fileRouter = createTRPCRouter({
         });
       }
 
-      const file = await ctx.prisma.file.create({
+      const file = await ctx.prisma.appFile.create({
         data: {
           senderId: sender.id,
           s3Key: presignedPostKey,
         },
       });
 
-      await ctx.prisma.fileShare.create({
+      await ctx.prisma.appFileShare.create({
         data: {
           fileId: file.id,
           receiverId: receiver.id,

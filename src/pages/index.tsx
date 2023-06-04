@@ -5,6 +5,7 @@ import AuthenticatedHomeContent from '~/components/home/AuthenticatedHomeContent
 import UnauthenticatedHomeContent from '~/components/home/UnauthenticatedHomeContent';
 
 const HomePage: NextPage = () => {
+  // TODO: Move this to SSR to potentially speed up the load
   const session = useSession();
 
   return (

@@ -1,6 +1,7 @@
 import { faSatelliteDish } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import classNames from 'classnames';
+import Link from 'next/link';
 import { useCallback, useEffect, useState, type ChangeEvent, type FC } from 'react';
 import Particles from 'react-particles';
 import { loadFull } from 'tsparticles';
@@ -24,6 +25,7 @@ const AuthenticatedHomeContent: FC = () => {
     data: shareFileData,
     isSuccess: isShareFileSuccess,
     isLoading: isShareFileLoading,
+    reset: resetShareFile,
   } = api.file.shareFile.useMutation();
   const { processedError: processedReceiverError } = useParsecfisError({ error: shareFileError });
   const [receiverError, setReceiverError] = useState('');
@@ -98,7 +100,7 @@ const AuthenticatedHomeContent: FC = () => {
     setGeneralError('');
 
     if (!file) {
-      setFileError('Trebuie să selectezi un fișier.');
+      setFileError('Nu este selectat niciun fișier.');
       return;
     }
     if (file.size > maxFileSizeInBytes) {
@@ -177,13 +179,14 @@ const AuthenticatedHomeContent: FC = () => {
     if (!displaySuccessMessage) {
       return;
     }
+    resetShareFile();
 
     setReceiverIdentifier('');
     setFile(undefined);
     setReceiverError('');
     setFileError('');
     setGeneralError('');
-  }, [displaySuccessMessage]);
+  }, [displaySuccessMessage, resetShareFile]);
 
   return (
     <div className="flex w-11/12 flex-col items-center justify-center md:w-9/12 lg:w-7/12 xl:w-5/12">
@@ -193,15 +196,23 @@ const AuthenticatedHomeContent: FC = () => {
           <div className="z-20">
             <h1 className="mb-6 text-3xl font-bold text-green-500">Fișierul a fost partajat cu succes!</h1>
           </div>
-          <button
-            type="button"
-            className="mb-3 mt-6 inline-flex rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 p-0.5 text-center text-sm font-medium text-slate-50 shadow-lg shadow-purple-500/50 hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-purple-300 dark:shadow-lg dark:shadow-purple-800/80 dark:focus:ring-purple-800"
-            onClick={() => {
-              setDisplaySuccessMessage(false);
-            }}
-          >
-            <span className="px-5 py-2.5">Trimite altul</span>
-          </button>
+          <div className="flex items-center justify-center gap-6">
+            <button
+              type="button"
+              className="mb-3 mt-6 inline-flex rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 p-0.5 text-center text-sm font-medium text-slate-50 shadow-lg shadow-purple-500/50 hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-purple-300 dark:shadow-lg dark:shadow-purple-800/80 dark:focus:ring-purple-800"
+              onClick={() => {
+                setDisplaySuccessMessage(false);
+              }}
+            >
+              <span className="px-5 py-2.5">Partajează altul</span>
+            </button>
+            <Link
+              className="mb-3 mt-6 inline-flex rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 p-0.5 text-center text-sm font-medium text-slate-50 shadow-lg shadow-purple-500/50 hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-purple-300 dark:shadow-lg dark:shadow-purple-800/80 dark:focus:ring-purple-800"
+              href="/fisiere/"
+            >
+              <span className="px-5 py-2.5">Vezi fișierele tale</span>
+            </Link>
+          </div>
         </>
       ) : (
         <>
@@ -293,7 +304,7 @@ const AuthenticatedHomeContent: FC = () => {
               },
             )}
           >
-            {(isShareFileLoading || displaySuccessMessage) && <LoadingSpinner />}
+            {(isShareFileLoading || isShareFileSuccess) && <LoadingSpinner />}
             <span className="relative rounded-md bg-slate-50 px-5 py-2.5 transition-all duration-75 ease-in group-hover:bg-opacity-0 dark:bg-gray-900">
               Partajează
             </span>

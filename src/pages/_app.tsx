@@ -27,12 +27,12 @@ const MyApp: AppType<{ session: Session | null }> = ({ Component, pageProps: { s
           href="/favicon.ico"
         />
       </Head>
-      <Analytics />
       <AppParticles />
       <SessionProvider session={session}>
         <Navigation />
         <main className="align-center flex min-h-screen flex-col justify-center">
           <Component {...pageProps} />
+          <Analytics />
         </main>
       </SessionProvider>
     </>

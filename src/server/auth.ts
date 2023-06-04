@@ -58,7 +58,7 @@ export const nextAuthOptions: NextAuthOptions = {
           const publicKey = ecdh.getPublicKey('hex');
 
           // Adăugăm un nou utilizator dacă nu există deja
-          const user = await prisma.user.upsert({
+          const user = await prisma.appUser.upsert({
             where: {
               publicKey,
             },
