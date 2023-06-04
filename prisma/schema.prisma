@@ -9,34 +9,24 @@ datasource db {
 }
 
 model AppUser {
-    id            Int            @id @default(autoincrement())
-    publicKey     String         @unique
-    email         String?        @unique
+    id            Int       @id @default(autoincrement())
+    publicKey     String    @unique
+    email         String?   @unique
     name          String?
-    registeredAt  DateTime       @default(now())
-    sentFiles     AppFile[]
-    receivedFiles AppFileShare[]
+    registeredAt  DateTime  @default(now())
+    sentFiles     AppFile[] @relation(name: "sender")
+    receivedFiles AppFile[] @relation(name: "receiver")
 }
 
 model AppFile {
-    id        Int            @id @default(autoincrement())
-    senderId  Int
-    s3Key     String         @unique
-    isDeleted Boolean        @default(false)
-    sender    AppUser        @relation(fields: [senderId], references: [id])
-    shares    AppFileShare[]
+    id         Int      @id @default(autoincrement())
+    senderId   Int
+    receiverId Int
+    s3Key      String   @unique
+    sharedAt   DateTime @default(now())
+    sender     AppUser  @relation(name: "sender", fields: [senderId], references: [id])
+    receiver   AppUser  @relation(name: "receiver", fields: [receiverId], references: [id])
 
     @@index([senderId])
-}
-
-model AppFileShare {
-    id         Int      @id @default(autoincrement())
-    fileId     Int
-    receiverId Int
-    sharedAt   DateTime @default(now())
-    file       AppFile  @relation(fields: [fileId], references: [id])
-    receiver   AppUser  @relation(fields: [receiverId], references: [id])
-
-    @@index([fileId])
     @@index([receiverId])
 }

@@ -146,7 +146,7 @@ const AuthenticatedHomeContent: FC = () => {
       } else {
         resultBuffer = Buffer.from(new Uint8Array(result));
       }
-      const encryptedResultBuffer = encrypt(resultBuffer, symmetricKey);
+      const { encryptedBuffer: encryptedResultBuffer } = encrypt(resultBuffer, symmetricKey);
       const encryptedBlob = new Blob([encryptedResultBuffer], {
         type: file.type,
       });
@@ -199,7 +199,7 @@ const AuthenticatedHomeContent: FC = () => {
           <div className="flex items-center justify-center gap-6">
             <button
               type="button"
-              className="mb-3 mt-6 inline-flex rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 p-0.5 text-center text-sm font-medium text-slate-50 shadow-lg shadow-purple-500/50 hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-purple-300 dark:shadow-lg dark:shadow-purple-800/80 dark:focus:ring-purple-800"
+              className="inline-flex rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 p-0.5 text-center text-sm font-medium text-slate-50 shadow-lg shadow-purple-500/50 hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-purple-300 dark:shadow-lg dark:shadow-purple-800/80 dark:focus:ring-purple-800"
               onClick={() => {
                 setDisplaySuccessMessage(false);
               }}
@@ -207,7 +207,7 @@ const AuthenticatedHomeContent: FC = () => {
               <span className="px-5 py-2.5">Partajează altul</span>
             </button>
             <Link
-              className="mb-3 mt-6 inline-flex rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 p-0.5 text-center text-sm font-medium text-slate-50 shadow-lg shadow-purple-500/50 hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-purple-300 dark:shadow-lg dark:shadow-purple-800/80 dark:focus:ring-purple-800"
+              className="inline-flex rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 p-0.5 text-center text-sm font-medium text-slate-50 shadow-lg shadow-purple-500/50 hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-purple-300 dark:shadow-lg dark:shadow-purple-800/80 dark:focus:ring-purple-800"
               href="/fisiere/"
             >
               <span className="px-5 py-2.5">Vezi fișierele tale</span>
@@ -317,6 +317,7 @@ const AuthenticatedHomeContent: FC = () => {
 };
 
 const FileSharedSuccessfullyParticles: FC = () => {
+  // TODO: Fix stutter
   const appParticlesInit = useCallback(async (engine: Engine) => {
     await loadFull(engine);
   }, []);

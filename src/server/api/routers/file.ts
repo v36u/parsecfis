@@ -4,12 +4,79 @@ import { TRPCError } from '@trpc/server';
 import { createECDH } from 'crypto';
 import { z } from 'zod';
 import { env } from '~/env.mjs';
+import { type FileTablePageData, type FileTablePageMetadata, type FileTablePageRow } from '~/utils/@types/FileTablePageData';
 import { maxFileSizeInBytes } from '~/utils/constants';
 import { getUserKeysWithGuard } from '~/utils/helpers/auth';
-import { encrypt } from '~/utils/helpers/encryption';
+import { decrypt, encrypt } from '~/utils/helpers/encryption';
+import { getHumanReadableDate } from '~/utils/helpers/shared';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 
 export const fileRouter = createTRPCRouter({
+  getSentFiles: publicProcedure
+    .input(
+      z.object({
+        currentPage: z.number(),
+        filesPerPage: z.number(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { publicKey: senderPublicKey, privateKey: senderPrivateKey } = getUserKeysWithGuard(ctx.session);
+
+      const totalFiles = await ctx.prisma.appFile.count({
+        where: {
+          sender: {
+            publicKey: senderPublicKey,
+          },
+        },
+      });
+
+      const fileTablePageMetadata: FileTablePageMetadata = {
+        totalFiles,
+        totalPages: Math.ceil(totalFiles / input.filesPerPage),
+      };
+
+      const currentPageFiles = await ctx.prisma.appFile.findMany({
+        where: {
+          sender: {
+            publicKey: senderPublicKey,
+          },
+        },
+        include: {
+          receiver: true,
+        },
+      });
+
+      const fileTablePageRows = currentPageFiles.map((sentFile) => {
+        const {
+          receiver: { publicKey: receiverPublicKey },
+          sharedAt,
+          s3Key,
+        } = sentFile;
+
+        const senderEcdh = createECDH('secp256k1');
+        senderEcdh.setPrivateKey(Buffer.from(senderPrivateKey, 'hex'));
+
+        const symmetricKey = senderEcdh.computeSecret(Buffer.from(receiverPublicKey, 'hex')).toString('hex');
+
+        const { decryptedBuffer: decryptedFileNameBuffer, iv } = decrypt(s3Key, symmetricKey);
+
+        const fileTablePageRow: FileTablePageRow = {
+          publicKey: receiverPublicKey,
+          sharedAt: getHumanReadableDate(sharedAt),
+          fileName: decryptedFileNameBuffer.toString('utf-8'),
+          iv: iv.toString('hex'),
+        };
+
+        return fileTablePageRow;
+      });
+
+      const filesPage: FileTablePageData = {
+        metadata: fileTablePageMetadata,
+        rows: fileTablePageRows,
+      };
+
+      return filesPage;
+    }),
   shareFile: publicProcedure
     .input(
       z.object({
@@ -24,17 +91,7 @@ export const fileRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { privateKey: senderPrivateKey, publicKey: senderPublicKey } = getUserKeysWithGuard(ctx.session);
-      const sender = await ctx.prisma.appUser.findFirst({
-        where: {
-          publicKey: senderPublicKey,
-        },
-      });
-      if (!sender) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'A intervenit o eroare. Te rugăm să te reautentifici.',
-        });
-      }
+
       const receiver = await ctx.prisma.appUser.findFirst({
         where: {
           OR: [
@@ -54,6 +111,13 @@ export const fileRouter = createTRPCRouter({
         });
       }
 
+      if (receiver.publicKey === senderPublicKey) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'Nu îți poți trimite un fișier ție însuți.',
+        });
+      }
+
       const senderEcdh = createECDH('secp256k1');
       senderEcdh.setPrivateKey(Buffer.from(senderPrivateKey, 'hex'));
 
@@ -61,7 +125,7 @@ export const fileRouter = createTRPCRouter({
 
       const s3 = new S3({});
       const presignedPost = await createPresignedPost(s3, {
-        Key: encrypt(input.fileName, symmetricKey).toString('hex'),
+        Key: encrypt(input.fileName, symmetricKey).encryptedBuffer.toString('hex'),
         Bucket: env.AWS_S3_BUCKET_NAME,
         Fields: {
           'Content-Type': input.fileType,
@@ -78,17 +142,26 @@ export const fileRouter = createTRPCRouter({
         });
       }
 
-      const file = await ctx.prisma.appFile.create({
-        data: {
-          senderId: sender.id,
-          s3Key: presignedPostKey,
+      const withSenderId = await ctx.prisma.appUser.findFirst({
+        where: {
+          publicKey: senderPublicKey,
+        },
+        select: {
+          id: true,
         },
       });
+      if (!withSenderId) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'A intervenit o eroare. Te rugăm să te reautentifici.',
+        });
+      }
 
-      await ctx.prisma.appFileShare.create({
+      await ctx.prisma.appFile.create({
         data: {
-          fileId: file.id,
+          senderId: withSenderId.id,
           receiverId: receiver.id,
+          s3Key: presignedPostKey,
         },
       });
 

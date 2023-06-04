@@ -5,32 +5,32 @@ const ivBytes = 16;
 /**
  * Encrypts a string or a buffer
  */
-export const encrypt = (input: string | Buffer, key: string) => {
-  const inputBuffer = typeof input === 'string' ? Buffer.from(input) : input;
+export const encrypt = (value: string | Buffer, key: string) => {
+  const buffer = typeof value === 'string' ? Buffer.from(value) : value;
 
   const iv = randomBytes(ivBytes);
   const keyBuffer = Buffer.from(key, 'hex');
   const cipher = createCipheriv('aes-256-cbc', keyBuffer, iv);
 
-  let encryptedInputBuffer = cipher.update(inputBuffer);
-  encryptedInputBuffer = Buffer.concat([iv, encryptedInputBuffer, cipher.final()]);
+  let encryptedBuffer = cipher.update(buffer);
+  encryptedBuffer = Buffer.concat([iv, encryptedBuffer, cipher.final()]);
 
-  return encryptedInputBuffer;
+  return { encryptedBuffer };
 };
 
 /**
  * Decrypts a hex-encoded string or a buffer
  */
-export const decrypt = (input: string | Buffer, key: string) => {
-  const inputBuffer = typeof input === 'string' ? Buffer.from(input, 'hex') : input;
+export const decrypt = (value: string | Buffer, key: string) => {
+  const buffer = typeof value === 'string' ? Buffer.from(value, 'hex') : value;
 
   const keyBuffer = Buffer.from(key, 'hex');
-  const iv = inputBuffer.subarray(0, ivBytes);
+  const iv = buffer.subarray(0, ivBytes);
   const decipher = createDecipheriv('aes-256-cbc', keyBuffer, iv);
 
-  const encryptedInputBuffer = inputBuffer.subarray(ivBytes);
-  let decryptedTextBuffer = decipher.update(encryptedInputBuffer);
-  decryptedTextBuffer = Buffer.concat([decryptedTextBuffer, decipher.final()]);
+  const encryptedBuffer = buffer.subarray(ivBytes);
+  let decryptedBuffer = decipher.update(encryptedBuffer);
+  decryptedBuffer = Buffer.concat([decryptedBuffer, decipher.final()]);
 
-  return decryptedTextBuffer;
+  return { decryptedBuffer, iv };
 };

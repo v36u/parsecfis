@@ -1,11 +1,26 @@
 import { type GetServerSideProps, type NextPage } from 'next';
 import { getServerSession } from 'next-auth';
 import Head from 'next/head';
+import { useState } from 'react';
 import FileTable from '~/components/files/fileTable';
 import { nextAuthOptions } from '~/server/auth';
+import { type FileTablePageData } from '~/utils/@types/FileTablePageData';
+import { api } from '~/utils/api';
+import { filesPerPage } from '~/utils/constants';
 import HttpStatusCode from '~/utils/enums/HttpStatusCode';
 
+const defaultFileTablePageData: FileTablePageData = { rows: [], metadata: { totalFiles: 0, totalPages: 0 } };
+
 const FilesPage: NextPage = () => {
+  const [currentSentPage, setCurrentSentPage] = useState(1);
+  const { data: sentFilesTablePageData, isLoading: isSentFilesTablePageDataLoading } = api.file.getSentFiles.useQuery({
+    currentPage: currentSentPage,
+    filesPerPage,
+  });
+  console.log(sentFilesTablePageData);
+
+  const [currentReceivePage, setCurrentReceivePage] = useState(1);
+
   return (
     <>
       <Head>
@@ -13,9 +28,21 @@ const FilesPage: NextPage = () => {
       </Head>
       <div className="flex w-full flex-col items-center justify-center">
         <h1 className="mb-6 text-3xl font-bold">Fișiere primite</h1>
-        <FileTable received />
+        <FileTable
+          received
+          pageData={defaultFileTablePageData}
+          isLoading={false}
+          currentPage={currentReceivePage}
+          setCurrentPage={setCurrentReceivePage}
+        />
         <h1 className="mb-6 mt-24 text-3xl font-bold">Fișiere trimise</h1>
-        <FileTable sent />
+        <FileTable
+          sent
+          pageData={sentFilesTablePageData ?? defaultFileTablePageData}
+          isLoading={isSentFilesTablePageDataLoading}
+          currentPage={currentSentPage}
+          setCurrentPage={setCurrentSentPage}
+        />
       </div>
     </>
   );
