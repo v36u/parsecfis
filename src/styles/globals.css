@@ -38,3 +38,7 @@ main button {
 .is-loading > *:not(.loading-spinner) {
   opacity: 0.2;
 }
+
+.loading-spinner > svg {
+  margin-right: 0;
+}

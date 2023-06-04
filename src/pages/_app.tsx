@@ -8,7 +8,7 @@ import { SessionProvider } from 'next-auth/react';
 import { type AppType } from 'next/app';
 import Head from 'next/head';
 import AppParticles from '~/components/_app/AppParticles';
-import Navigation from '~/components/_app/navigation/Navigation';
+import Navigation from '~/components/_app/Navigation';
 import '~/styles/globals.css';
 import { api } from '~/utils/api';
 
