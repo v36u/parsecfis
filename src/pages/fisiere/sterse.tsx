@@ -8,7 +8,7 @@ import { api } from '~/utils/api';
 import { defaultFileTablePageData, filesPerPage } from '~/utils/constants';
 import HttpStatusCode from '~/utils/enums/HttpStatusCode';
 
-const DeletedPage: NextPage = () => {
+const DeletedFilesPage: NextPage = () => {
   const [currentReceivedPage, setCurrentReceivedPage] = useState(1);
   const { data: receivedFilesTablePageData, isLoading: isReceivedFilesTablePageDataLoading } = api.file.getReceivedFiles.useQuery({
     currentPage: currentReceivedPage,
@@ -68,4 +68,4 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   };
 };
 
-export default DeletedPage;
+export default DeletedFilesPage;
