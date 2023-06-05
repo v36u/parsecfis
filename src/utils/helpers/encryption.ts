@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 
-const ivBytes = 16;
+const ivBytes = 32;
 
 /**
  * Encrypts a string or a buffer

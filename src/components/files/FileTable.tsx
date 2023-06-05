@@ -1,4 +1,4 @@
-import { faDownload } from '@fortawesome/free-solid-svg-icons';
+import { faDownload, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import classNames from 'classnames';
 import { Tooltip } from 'flowbite-react';
@@ -113,14 +113,25 @@ const FileTable: FC<Props> = ({ sent, received, pageData: { rows, metadata }, is
               <td className="py-4 text-center">
                 <PublicKeyBadge publicKey={file.publicKey} />
               </td>
-              <td className="flex items-center justify-center py-4">
+              <td className="flex items-center justify-center gap-6 py-4">
                 <button className="font-medium text-blue-600 hover:underline dark:text-blue-500">
                   <Tooltip
-                    content="Descarcă"
+                    content="Descărcare"
                     animation="duration-500"
                   >
                     <FontAwesomeIcon
                       icon={faDownload}
+                      size="lg"
+                    />
+                  </Tooltip>
+                </button>
+                <button className="font-medium text-blue-600 hover:underline dark:text-blue-500">
+                  <Tooltip
+                    content="Ștergere"
+                    animation="duration-500"
+                  >
+                    <FontAwesomeIcon
+                      icon={faTrashCan}
                       size="lg"
                     />
                   </Tooltip>

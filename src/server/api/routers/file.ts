@@ -51,6 +51,7 @@ export const fileRouter = createTRPCRouter({
           sender: { publicKey: senderPublicKey },
           sharedAt,
           s3Key,
+          isDeleted,
         } = sentFile;
 
         const receiverEcdh = createECDH('secp256k1');
@@ -65,6 +66,7 @@ export const fileRouter = createTRPCRouter({
           sharedAt: getHumanReadableDate(sharedAt),
           fileName: decryptedFileNameBuffer.toString('utf-8'),
           iv: iv.toString('hex'),
+          isDeleted,
         };
 
         return fileTablePageRow;
@@ -116,6 +118,7 @@ export const fileRouter = createTRPCRouter({
           receiver: { publicKey: receiverPublicKey },
           sharedAt,
           s3Key,
+          isDeleted,
         } = sentFile;
 
         const senderEcdh = createECDH('secp256k1');
@@ -130,6 +133,7 @@ export const fileRouter = createTRPCRouter({
           sharedAt: getHumanReadableDate(sharedAt),
           fileName: decryptedFileNameBuffer.toString('utf-8'),
           iv: iv.toString('hex'),
+          isDeleted,
         };
 
         return fileTablePageRow;

@@ -23,6 +23,7 @@ model AppFile {
     senderId   Int
     receiverId Int
     s3Key      String   @unique
+    isDeleted  Boolean  @default(false)
     sharedAt   DateTime @default(now())
     sender     AppUser  @relation(name: "sender", fields: [senderId], references: [id])
     receiver   AppUser  @relation(name: "receiver", fields: [receiverId], references: [id])

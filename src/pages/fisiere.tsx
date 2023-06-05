@@ -2,7 +2,7 @@ import { type GetServerSideProps, type NextPage } from 'next';
 import { getServerSession } from 'next-auth';
 import Head from 'next/head';
 import { useState } from 'react';
-import FileTable from '~/components/files/fileTable';
+import FileTable from '~/components/files/FileTable';
 import { nextAuthOptions } from '~/server/auth';
 import { type FileTablePageData } from '~/utils/@types/FileTablePageData';
 import { api } from '~/utils/api';

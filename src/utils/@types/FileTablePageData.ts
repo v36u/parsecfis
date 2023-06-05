@@ -3,6 +3,7 @@ export type FileTablePageRow = {
   sharedAt: string;
   fileName: string;
   iv: string;
+  isDeleted: boolean;
 };
 
 export type FileTablePageMetadata = {

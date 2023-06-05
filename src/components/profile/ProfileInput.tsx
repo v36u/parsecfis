@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { type UseMutationResult } from '@tanstack/react-query';
 import classNames from 'classnames';
 import { useEffect, useState, type ChangeEvent, type FC } from 'react';
-import { AppError } from '~/utils/hooks/useAppError';
+import { useAppError } from '~/utils/hooks/useAppError';
 import { useDebouncedCallback } from '~/utils/hooks/useDebouncedCallback';
 
 export type ProfileInputMutation = UseMutationResult;
@@ -25,7 +25,7 @@ const ProfileInput: FC<Props> = ({ mutation, field, label, defaultValue, icon, p
     delay: 2.5e3,
   });
 
-  const { processedError: processedUpdateError } = AppError({ error });
+  const { processedError: processedUpdateError } = useAppError({ error });
   const [updateError, setUpdateError] = useState('');
   useEffect(() => {
     if (isError) {
