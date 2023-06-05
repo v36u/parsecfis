@@ -4,17 +4,17 @@ type WithMessage = {
   message: string;
 };
 
-type UseParsecfisErrorArgs = {
+type UseAppErrorArgs = {
   error: unknown;
 };
 
-type UseParsecfisErrorResult = {
+type UseAppErrorResult = {
   processedError: string;
 };
 
-type UseParsecfisError = (args: UseParsecfisErrorArgs) => UseParsecfisErrorResult;
+type UseAppError = (args: UseAppErrorArgs) => UseAppErrorResult;
 
-export const useParsecfisError: UseParsecfisError = ({ error }) => {
+export const useAppError: UseAppError = ({ error }) => {
   const [processedError, setProcessedError] = useState('');
 
   useEffect(() => {

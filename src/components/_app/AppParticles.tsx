@@ -1,12 +1,9 @@
-import { useCallback, type FC } from 'react';
+import { type FC } from 'react';
 import Particles from 'react-particles';
-import { loadFull } from 'tsparticles';
-import { type Engine } from 'tsparticles-engine';
+import { useParticlesInit } from '~/utils/hooks/useParticlesInit';
 
 const AppParticles: FC = () => {
-  const appParticlesInit = useCallback(async (engine: Engine) => {
-    await loadFull(engine);
-  }, []);
+  const { particlesInit: appParticlesInit } = useParticlesInit();
 
   return (
     <Particles

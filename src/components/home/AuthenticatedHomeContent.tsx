@@ -4,13 +4,12 @@ import classNames from 'classnames';
 import Link from 'next/link';
 import { useCallback, useEffect, useState, type ChangeEvent, type FC } from 'react';
 import Particles from 'react-particles';
-import { loadFull } from 'tsparticles';
-import { type Engine } from 'tsparticles-engine';
 import { api } from '~/utils/api';
 import { maxFileSizeInBytes } from '~/utils/constants';
 import { encrypt } from '~/utils/helpers/encryption';
 import { getFormattedFileSize } from '~/utils/helpers/file';
-import { useParsecfisError } from '~/utils/hooks/useParsecfisError';
+import { useAppError } from '~/utils/hooks/useAppError';
+import { useParticlesInit } from '~/utils/hooks/useParticlesInit';
 import LoadingSpinner from '../shared/LoadingSpinner';
 
 let dragCounter = 0;
@@ -27,7 +26,7 @@ const AuthenticatedHomeContent: FC = () => {
     isLoading: isShareFileLoading,
     reset: resetShareFile,
   } = api.file.shareFile.useMutation();
-  const { processedError: processedReceiverError } = useParsecfisError({ error: shareFileError });
+  const { processedError: processedReceiverError } = useAppError({ error: shareFileError });
   const [receiverError, setReceiverError] = useState('');
   const [generalError, setGeneralError] = useState('');
   const [displaySuccessMessage, setDisplaySuccessMessage] = useState(false);
@@ -317,15 +316,12 @@ const AuthenticatedHomeContent: FC = () => {
 };
 
 const FileSharedSuccessfullyParticles: FC = () => {
-  // TODO: Fix stutter
-  const appParticlesInit = useCallback(async (engine: Engine) => {
-    await loadFull(engine);
-  }, []);
+  const { particlesInit: successParticlesInit } = useParticlesInit();
 
   return (
     <Particles
       id="file-shared-successfully-particles"
-      init={appParticlesInit}
+      init={successParticlesInit}
       canvasClassName="z-10"
       options={{
         fpsLimit: 100,
