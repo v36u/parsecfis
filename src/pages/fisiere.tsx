@@ -12,14 +12,17 @@ import HttpStatusCode from '~/utils/enums/HttpStatusCode';
 const defaultFileTablePageData: FileTablePageData = { rows: [], metadata: { totalFiles: 0, totalPages: 0 } };
 
 const FilesPage: NextPage = () => {
+  const [currentReceivedPage, setCurrentReceivedPage] = useState(1);
+  const { data: receivedFilesTablePageData, isLoading: isReceivedFilesTablePageDataLoading } = api.file.getReceivedFiles.useQuery({
+    currentPage: currentReceivedPage,
+    filesPerPage,
+  });
+
   const [currentSentPage, setCurrentSentPage] = useState(1);
   const { data: sentFilesTablePageData, isLoading: isSentFilesTablePageDataLoading } = api.file.getSentFiles.useQuery({
     currentPage: currentSentPage,
     filesPerPage,
   });
-  console.log(sentFilesTablePageData);
-
-  const [currentReceivePage, setCurrentReceivePage] = useState(1);
 
   return (
     <>
@@ -30,10 +33,10 @@ const FilesPage: NextPage = () => {
         <h1 className="mb-6 text-3xl font-bold">Fișiere primite</h1>
         <FileTable
           received
-          pageData={defaultFileTablePageData}
-          isLoading={false}
-          currentPage={currentReceivePage}
-          setCurrentPage={setCurrentReceivePage}
+          pageData={receivedFilesTablePageData ?? defaultFileTablePageData}
+          isLoading={isReceivedFilesTablePageDataLoading}
+          currentPage={currentReceivedPage}
+          setCurrentPage={setCurrentReceivedPage}
         />
         <h1 className="mb-6 mt-24 text-3xl font-bold">Fișiere trimise</h1>
         <FileTable

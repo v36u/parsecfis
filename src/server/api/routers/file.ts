@@ -12,6 +12,71 @@ import { getHumanReadableDate } from '~/utils/helpers/shared';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 
 export const fileRouter = createTRPCRouter({
+  getReceivedFiles: publicProcedure
+    .input(
+      z.object({
+        currentPage: z.number(),
+        filesPerPage: z.number(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { publicKey: receiverPublicKey, privateKey: receiverPrivateKey } = getUserKeysWithGuard(ctx.session);
+
+      const totalFiles = await ctx.prisma.appFile.count({
+        where: {
+          receiver: {
+            publicKey: receiverPublicKey,
+          },
+        },
+      });
+
+      const fileTablePageMetadata: FileTablePageMetadata = {
+        totalFiles,
+        totalPages: Math.ceil(totalFiles / input.filesPerPage),
+      };
+
+      const currentPageFiles = await ctx.prisma.appFile.findMany({
+        where: {
+          receiver: {
+            publicKey: receiverPublicKey,
+          },
+        },
+        include: {
+          sender: true,
+        },
+      });
+
+      const fileTablePageRows = currentPageFiles.map((sentFile) => {
+        const {
+          sender: { publicKey: senderPublicKey },
+          sharedAt,
+          s3Key,
+        } = sentFile;
+
+        const receiverEcdh = createECDH('secp256k1');
+        receiverEcdh.setPrivateKey(Buffer.from(receiverPrivateKey, 'hex'));
+
+        const symmetricKey = receiverEcdh.computeSecret(Buffer.from(senderPublicKey, 'hex')).toString('hex');
+
+        const { decryptedBuffer: decryptedFileNameBuffer, iv } = decrypt(s3Key, symmetricKey);
+
+        const fileTablePageRow: FileTablePageRow = {
+          publicKey: senderPublicKey,
+          sharedAt: getHumanReadableDate(sharedAt),
+          fileName: decryptedFileNameBuffer.toString('utf-8'),
+          iv: iv.toString('hex'),
+        };
+
+        return fileTablePageRow;
+      });
+
+      const filesPage: FileTablePageData = {
+        metadata: fileTablePageMetadata,
+        rows: fileTablePageRows,
+      };
+
+      return filesPage;
+    }),
   getSentFiles: publicProcedure
     .input(
       z.object({

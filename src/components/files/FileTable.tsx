@@ -130,7 +130,7 @@ const FileTable: FC<Props> = ({ sent, received, pageData: { rows, metadata }, is
           ))}
         </tbody>
       </table>
-      {metadata.totalFiles > 0 && (
+      {metadata.totalFiles > 1 && (
         <nav className="flex items-center justify-between bg-slate-200 bg-opacity-50 p-4">
           <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
             Se afișează{' '}
