@@ -4,26 +4,30 @@ import { getUserKeysWithGuard } from '~/utils/helpers/auth';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 
 export const userRouter = createTRPCRouter({
-  fetchUserWithGuard: publicProcedure.query(async ({ ctx }) => {
-    const { publicKey } = getUserKeysWithGuard(ctx.session);
-
-    const user = await ctx.prisma.appUser.findUniqueOrThrow({
-      where: {
-        publicKey,
-      },
-    });
-    return user;
-  }),
+  fetchUserWithGuard: publicProcedure
+    .input(
+      z.object({
+        publicKey: z.string().length(130, 'Cheie publică invalidă.'),
+      }),
+    )
+    .query(async ({ ctx, input: { publicKey } }) => {
+      const user = await ctx.prisma.appUser.findUniqueOrThrow({
+        where: {
+          publicKey,
+        },
+      });
+      return user;
+    }),
   updateUserEmail: publicProcedure
     .input(
       z.object({
         email: z.string().email('Această adresă de email nu este validă.'),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input: { email } }) => {
       const match = await ctx.prisma.appUser.findUnique({
         where: {
-          email: input.email,
+          email,
         },
       });
       if (match) {
@@ -39,7 +43,7 @@ export const userRouter = createTRPCRouter({
           publicKey,
         },
         data: {
-          email: input.email,
+          email,
         },
       });
     }),
@@ -49,14 +53,15 @@ export const userRouter = createTRPCRouter({
         name: z.string().min(3, 'Acest nume nu este valid.'),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input: { name } }) => {
       const { publicKey } = getUserKeysWithGuard(ctx.session);
+
       await ctx.prisma.appUser.update({
         where: {
           publicKey,
         },
         data: {
-          name: input.name,
+          name,
         },
       });
     }),

@@ -17,6 +17,7 @@ export const fileRouter = createTRPCRouter({
       z.object({
         currentPage: z.number(),
         filesPerPage: z.number(),
+        deleted: z.boolean(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -37,6 +38,13 @@ export const fileRouter = createTRPCRouter({
 
       const currentPageFiles = await ctx.prisma.appFile.findMany({
         where: {
+          deletedAt: input.deleted
+            ? {
+                not: null,
+              }
+            : {
+                equals: null,
+              },
           receiver: {
             publicKey: receiverPublicKey,
           },
@@ -49,9 +57,9 @@ export const fileRouter = createTRPCRouter({
       const fileTablePageRows = currentPageFiles.map((sentFile) => {
         const {
           sender: { publicKey: senderPublicKey },
-          sharedAt,
           s3Key,
-          isDeleted,
+          sharedAt,
+          deletedAt,
         } = sentFile;
 
         const receiverEcdh = createECDH('secp256k1');
@@ -63,11 +71,13 @@ export const fileRouter = createTRPCRouter({
 
         const fileTablePageRow: FileTablePageRow = {
           publicKey: senderPublicKey,
-          sharedAt: getHumanReadableDate(sharedAt),
           fileName: decryptedFileNameBuffer.toString('utf-8'),
+          sharedAt: getHumanReadableDate(sharedAt),
           iv: iv.toString('hex'),
-          isDeleted,
         };
+        if (deletedAt) {
+          fileTablePageRow.deletedAt = getHumanReadableDate(deletedAt);
+        }
 
         return fileTablePageRow;
       });
@@ -84,6 +94,7 @@ export const fileRouter = createTRPCRouter({
       z.object({
         currentPage: z.number(),
         filesPerPage: z.number(),
+        deleted: z.boolean(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -91,6 +102,13 @@ export const fileRouter = createTRPCRouter({
 
       const totalFiles = await ctx.prisma.appFile.count({
         where: {
+          deletedAt: input.deleted
+            ? {
+                not: null,
+              }
+            : {
+                equals: null,
+              },
           sender: {
             publicKey: senderPublicKey,
           },
@@ -116,9 +134,9 @@ export const fileRouter = createTRPCRouter({
       const fileTablePageRows = currentPageFiles.map((sentFile) => {
         const {
           receiver: { publicKey: receiverPublicKey },
-          sharedAt,
           s3Key,
-          isDeleted,
+          sharedAt,
+          deletedAt,
         } = sentFile;
 
         const senderEcdh = createECDH('secp256k1');
@@ -130,11 +148,13 @@ export const fileRouter = createTRPCRouter({
 
         const fileTablePageRow: FileTablePageRow = {
           publicKey: receiverPublicKey,
-          sharedAt: getHumanReadableDate(sharedAt),
           fileName: decryptedFileNameBuffer.toString('utf-8'),
+          sharedAt: getHumanReadableDate(sharedAt),
           iv: iv.toString('hex'),
-          isDeleted,
         };
+        if (deletedAt) {
+          fileTablePageRow.deletedAt = getHumanReadableDate(deletedAt);
+        }
 
         return fileTablePageRow;
       });

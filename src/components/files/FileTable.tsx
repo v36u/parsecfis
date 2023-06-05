@@ -12,6 +12,7 @@ import PublicKeyBadge from '../shared/PublicKeyBadge';
 const ELLIPSIS = '...';
 
 type Props = {
+  deleted?: boolean;
   sent?: boolean;
   received?: boolean;
 
@@ -22,7 +23,7 @@ type Props = {
   setCurrentPage: Dispatch<SetStateAction<number>>;
 };
 
-const FileTable: FC<Props> = ({ sent, received, pageData: { rows, metadata }, isLoading, currentPage, setCurrentPage }) => {
+const FileTable: FC<Props> = ({ sent, received, deleted, pageData: { rows, metadata }, isLoading, currentPage, setCurrentPage }) => {
   invariant(!(sent && received) && (sent || received), 'Invalid file table parameters.');
 
   const handlePageChange = (page: number) => {
@@ -74,12 +75,6 @@ const FileTable: FC<Props> = ({ sent, received, pageData: { rows, metadata }, is
               scope="col"
               className="px-6 py-3 text-center"
             >
-              Data partajării
-            </th>
-            <th
-              scope="col"
-              className="px-6 py-3 text-center"
-            >
               {sent && 'Trimis către'}
               {received && 'Primit de la'}
             </th>
@@ -87,8 +82,24 @@ const FileTable: FC<Props> = ({ sent, received, pageData: { rows, metadata }, is
               scope="col"
               className="px-6 py-3 text-center"
             >
-              Acțiuni
+              Data partajării
             </th>
+            {deleted && (
+              <th
+                scope="col"
+                className="px-6 py-3 text-center"
+              >
+                Data ștergerii
+              </th>
+            )}
+            {!deleted && (
+              <th
+                scope="col"
+                className="px-6 py-3 text-center"
+              >
+                Acțiuni
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -98,8 +109,8 @@ const FileTable: FC<Props> = ({ sent, received, pageData: { rows, metadata }, is
                 className="py-4 text-center"
                 colSpan={4}
               >
-                {sent && 'Nu ai trimis niciun fișier încă.'}
-                {received && 'Nu ai primit niciun fișier încă.'}
+                {sent && deleted ? 'Nu ai șters niciun fișier trimis încă.' : 'Nu ai trimis niciun fișier încă.'}
+                {received && deleted ? 'Nu ai șters niciun fișier primit încă.' : 'Nu ai primit niciun fișier încă.'}
               </td>
             </tr>
           )}
@@ -109,34 +120,36 @@ const FileTable: FC<Props> = ({ sent, received, pageData: { rows, metadata }, is
               className="border-y bg-slate-50 bg-opacity-95 hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-600"
             >
               <td className="py-4 text-center">{file.fileName}</td>
-              <td className="py-4 text-center">{file.sharedAt}</td>
               <td className="py-4 text-center">
                 <PublicKeyBadge publicKey={file.publicKey} />
               </td>
-              <td className="flex items-center justify-center gap-6 py-4">
-                <button className="font-medium text-blue-600 hover:underline dark:text-blue-500">
-                  <Tooltip
-                    content="Descărcare"
-                    animation="duration-500"
-                  >
-                    <FontAwesomeIcon
-                      icon={faDownload}
-                      size="lg"
-                    />
-                  </Tooltip>
-                </button>
-                <button className="font-medium text-blue-600 hover:underline dark:text-blue-500">
-                  <Tooltip
-                    content="Ștergere"
-                    animation="duration-500"
-                  >
-                    <FontAwesomeIcon
-                      icon={faTrashCan}
-                      size="lg"
-                    />
-                  </Tooltip>
-                </button>
-              </td>
+              <td className="py-4 text-center">{file.sharedAt}</td>
+              {!deleted && (
+                <td className="flex items-center justify-center gap-6 py-4">
+                  <button className="font-medium text-blue-600 hover:underline dark:text-blue-500">
+                    <Tooltip
+                      content="Descărcare"
+                      animation="duration-500"
+                    >
+                      <FontAwesomeIcon
+                        icon={faDownload}
+                        size="lg"
+                      />
+                    </Tooltip>
+                  </button>
+                  <button className="font-medium text-blue-600 hover:underline dark:text-blue-500">
+                    <Tooltip
+                      content="Ștergere"
+                      animation="duration-500"
+                    >
+                      <FontAwesomeIcon
+                        icon={faTrashCan}
+                        size="lg"
+                      />
+                    </Tooltip>
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

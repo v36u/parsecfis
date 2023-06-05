@@ -1,9 +1,9 @@
 export type FileTablePageRow = {
   publicKey: string;
-  sharedAt: string;
   fileName: string;
+  sharedAt: string;
+  deletedAt?: string;
   iv: string;
-  isDeleted: boolean;
 };
 
 export type FileTablePageMetadata = {

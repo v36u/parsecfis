@@ -19,14 +19,14 @@ model AppUser {
 }
 
 model AppFile {
-    id         Int      @id @default(autoincrement())
+    id         Int       @id @default(autoincrement())
     senderId   Int
     receiverId Int
-    s3Key      String   @unique
-    isDeleted  Boolean  @default(false)
-    sharedAt   DateTime @default(now())
-    sender     AppUser  @relation(name: "sender", fields: [senderId], references: [id])
-    receiver   AppUser  @relation(name: "receiver", fields: [receiverId], references: [id])
+    s3Key      String    @unique
+    sharedAt   DateTime  @default(now())
+    deletedAt  DateTime?
+    sender     AppUser   @relation(name: "sender", fields: [senderId], references: [id])
+    receiver   AppUser   @relation(name: "receiver", fields: [receiverId], references: [id])
 
     @@index([senderId])
     @@index([receiverId])

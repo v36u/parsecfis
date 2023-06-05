@@ -4,42 +4,43 @@ import Head from 'next/head';
 import { useState } from 'react';
 import FileTable from '~/components/files/FileTable';
 import { nextAuthOptions } from '~/server/auth';
-import { type FileTablePageData } from '~/utils/@types/FileTablePageData';
 import { api } from '~/utils/api';
-import { filesPerPage } from '~/utils/constants';
+import { defaultFileTablePageData, filesPerPage } from '~/utils/constants';
 import HttpStatusCode from '~/utils/enums/HttpStatusCode';
 
-const defaultFileTablePageData: FileTablePageData = { rows: [], metadata: { totalFiles: 0, totalPages: 0 } };
-
-const FilesPage: NextPage = () => {
+const DeletedPage: NextPage = () => {
   const [currentReceivedPage, setCurrentReceivedPage] = useState(1);
   const { data: receivedFilesTablePageData, isLoading: isReceivedFilesTablePageDataLoading } = api.file.getReceivedFiles.useQuery({
     currentPage: currentReceivedPage,
     filesPerPage,
+    deleted: true,
   });
 
   const [currentSentPage, setCurrentSentPage] = useState(1);
   const { data: sentFilesTablePageData, isLoading: isSentFilesTablePageDataLoading } = api.file.getSentFiles.useQuery({
     currentPage: currentSentPage,
     filesPerPage,
+    deleted: true,
   });
 
   return (
     <>
       <Head>
-        <title>Fișiere &mdash; Parsecfis</title>
+        <title>Coș de gunoi &mdash; Parsecfis</title>
       </Head>
       <div className="flex w-full flex-col items-center justify-center">
-        <h1 className="mb-6 text-3xl font-bold">Fișiere primite</h1>
+        <h1 className="mb-6 text-3xl font-bold">Fișiere primite șterse</h1>
         <FileTable
+          deleted
           received
           pageData={receivedFilesTablePageData ?? defaultFileTablePageData}
           isLoading={isReceivedFilesTablePageDataLoading}
           currentPage={currentReceivedPage}
           setCurrentPage={setCurrentReceivedPage}
         />
-        <h1 className="mb-6 mt-24 text-3xl font-bold">Fișiere trimise</h1>
+        <h1 className="mb-6 mt-24 text-3xl font-bold">Fișiere trimise șterse</h1>
         <FileTable
+          deleted
           sent
           pageData={sentFilesTablePageData ?? defaultFileTablePageData}
           isLoading={isSentFilesTablePageDataLoading}
@@ -67,4 +68,4 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   };
 };
 
-export default FilesPage;
+export default DeletedPage;
