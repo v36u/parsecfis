@@ -1,4 +1,4 @@
-import { GetObjectCommand, S3 } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, S3 } from '@aws-sdk/client-s3';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { TRPCError } from '@trpc/server';
@@ -26,6 +26,13 @@ export const fileRouter = createTRPCRouter({
 
       const totalFiles = await ctx.prisma.appFile.count({
         where: {
+          deletedAt: deleted
+            ? {
+                not: null,
+              }
+            : {
+                equals: null,
+              },
           receiver: {
             publicKey: receiverPublicKey,
           },
@@ -133,6 +140,13 @@ export const fileRouter = createTRPCRouter({
 
       const currentPageFiles = await ctx.prisma.appFile.findMany({
         where: {
+          deletedAt: deleted
+            ? {
+                not: null,
+              }
+            : {
+                equals: null,
+              },
           sender: {
             publicKey: senderPublicKey,
           },
@@ -164,7 +178,6 @@ export const fileRouter = createTRPCRouter({
           iv: iv.toString('hex'),
         };
 
-        console.log(fileTablePageRow.iv);
         if (deletedAt) {
           fileTablePageRow.deletedAt = getHumanReadableDate(deletedAt);
         }
@@ -228,11 +241,12 @@ export const fileRouter = createTRPCRouter({
       senderEcdh.setPrivateKey(Buffer.from(senderPrivateKey, 'hex'));
 
       const symmetricKey = senderEcdh.computeSecret(Buffer.from(receiver.publicKey, 'hex')).toString('hex');
+      const s3Key = encrypt(fileName, symmetricKey).encryptedBuffer.toString('hex');
 
       const s3 = new S3({});
       const presignedPost = await createPresignedPost(s3, {
-        Key: encrypt(fileName, symmetricKey).encryptedBuffer.toString('hex'),
         Bucket: env.AWS_S3_BUCKET_NAME,
+        Key: s3Key,
         Fields: {
           'Content-Type': fileType,
         },
@@ -291,20 +305,53 @@ export const fileRouter = createTRPCRouter({
       ecdh.setPrivateKey(Buffer.from(privateKey, 'hex'));
 
       const symmetricKey = ecdh.computeSecret(Buffer.from(otherParticipantPublicKey, 'hex')).toString('hex');
-
-      console.log(iv);
+      const s3Key = encrypt(fileName, symmetricKey, Buffer.from(iv, 'hex')).encryptedBuffer.toString('hex');
 
       const s3 = new S3({});
-      const command = new GetObjectCommand({
-        Key: encrypt(fileName, symmetricKey, Buffer.from(iv, 'hex')).encryptedBuffer.toString('hex'),
+      const getCommand = new GetObjectCommand({
         Bucket: env.AWS_S3_BUCKET_NAME,
+        Key: s3Key,
       });
-      const signedGetUrl = await getSignedUrl(s3, command, {
+      const signedGetUrl = await getSignedUrl(s3, getCommand, {
         expiresIn: 5, // secunde
       });
 
       return {
         signedGetUrl,
       };
+    }),
+  deleteFile: publicProcedure
+    .input(
+      z.object({
+        otherParticipantPublicKey: z.string(),
+        fileName: z.string(),
+        iv: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input: { otherParticipantPublicKey, fileName, iv } }) => {
+      const { privateKey } = getUserKeysWithGuard(ctx.session);
+
+      const ecdh = createECDH(eccCurveName);
+      ecdh.setPrivateKey(Buffer.from(privateKey, 'hex'));
+
+      const symmetricKey = ecdh.computeSecret(Buffer.from(otherParticipantPublicKey, 'hex')).toString('hex');
+      const s3Key = encrypt(fileName, symmetricKey, Buffer.from(iv, 'hex')).encryptedBuffer.toString('hex');
+
+      const s3 = new S3({});
+      const deleteCommand = new DeleteObjectCommand({
+        Bucket: env.AWS_S3_BUCKET_NAME,
+        Key: s3Key,
+      });
+
+      await s3.send(deleteCommand);
+
+      await ctx.prisma.appFile.update({
+        where: {
+          s3Key,
+        },
+        data: {
+          deletedAt: new Date(),
+        },
+      });
     }),
 });

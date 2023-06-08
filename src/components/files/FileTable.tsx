@@ -73,6 +73,7 @@ const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { ro
     if (!rowToDownload || !downloadData) {
       return;
     }
+    setRowToDownload(null);
 
     fetch(downloadData.signedGetUrl)
       .then((response) => response.blob())
@@ -122,11 +123,12 @@ const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { ro
       .catch((error) => {
         console.error(error);
       });
-
-    setRowToDownload(null);
   }, [downloadData, rowToDownload, session.user.privateKey]);
 
-  const handleDeleteButtonClick = () => {};
+  const { mutate: deleteFile } = api.file.deleteFile.useMutation();
+  const handleDeleteButtonClick = (row: FileTablePageRow) => {
+    deleteFile(row);
+  };
 
   return (
     <div
@@ -182,8 +184,8 @@ const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { ro
                 className="py-4 text-center"
                 colSpan={4}
               >
-                {sent && (deleted ? 'Nu ai șters niciun fișier trimis încă.' : 'Nu ai trimis niciun fișier încă.')}
-                {received && (deleted ? 'Nu ai șters niciun fișier primit încă.' : 'Nu ai primit niciun fișier încă.')}
+                {sent && (deleted ? 'Nu există fișiere trimise șterse.' : 'Nu există fișiere trimise disponibile.')}
+                {received && (deleted ? 'Nu există fișiere primite șterse.' : 'Nu există fișiere primite disponibile.')}
               </td>
             </tr>
           )}
@@ -197,6 +199,7 @@ const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { ro
                 <PublicKeyBadge publicKey={row.otherParticipantPublicKey} />
               </td>
               <td className="py-4 text-center">{row.sharedAt}</td>
+              {deleted && <td className="py-4 text-center">{row.deletedAt}</td>}
               {!deleted && (
                 <td className="flex items-center justify-center gap-6 py-4">
                   <button
@@ -217,7 +220,7 @@ const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { ro
                   <button
                     type="button"
                     className="font-medium text-blue-600 hover:underline dark:text-blue-500"
-                    onClick={() => handleDeleteButtonClick()}
+                    onClick={() => handleDeleteButtonClick(row)}
                   >
                     <Tooltip
                       content="Ștergere"

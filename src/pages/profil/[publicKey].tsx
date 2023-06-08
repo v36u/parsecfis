@@ -1,10 +1,11 @@
 import { faEnvelope, faUser } from '@fortawesome/free-solid-svg-icons';
+import { type UseMutationResult } from '@tanstack/react-query';
 import classNames from 'classnames';
 import type { GetServerSideProps, NextPage } from 'next';
 import { getServerSession } from 'next-auth';
 import Head from 'next/head';
 import ProfileData from '~/components/profile/ProfileData';
-import ProfileInput, { type ProfileInputMutation } from '~/components/profile/ProfileInput';
+import ProfileInput from '~/components/profile/ProfileInput';
 import LoadingSpinner from '~/components/shared/LoadingSpinner';
 import PublicKeyBadge from '~/components/shared/PublicKeyBadge';
 import { nextAuthOptions } from '~/server/auth';
@@ -27,6 +28,9 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
       refetchOnWindowFocus: false,
     },
   );
+
+  const nameMutation = api.user.updateUserName.useMutation() as UseMutationResult;
+  const emailMutation = api.user.updateUserEmail.useMutation() as UseMutationResult;
 
   const textProfil = isReadOnly ? 'Profil' : 'Profilul tău';
 
@@ -57,7 +61,7 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
 
             {!isReadOnly && (
               <ProfileInput
-                mutation={api.user.updateUserName.useMutation() as ProfileInputMutation}
+                mutation={nameMutation}
                 field="name"
                 label="Nume"
                 placeholder="Ex: Ion Popescu"
@@ -73,7 +77,7 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
             )}
             {!isReadOnly && (
               <ProfileInput
-                mutation={api.user.updateUserEmail.useMutation() as ProfileInputMutation}
+                mutation={emailMutation}
                 field="email"
                 label="Email"
                 placeholder="Ex: ion.popescu@email.com"

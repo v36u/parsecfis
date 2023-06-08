@@ -6,10 +6,8 @@ import { useEffect, useState, type ChangeEvent, type FC } from 'react';
 import { useAppError } from '~/utils/hooks/useAppError';
 import { useDebouncedCallback } from '~/utils/hooks/useDebouncedCallback';
 
-export type ProfileInputMutation = UseMutationResult;
-
 type Props = {
-  mutation: ProfileInputMutation;
+  mutation: UseMutationResult;
   field: string;
   label: string;
   placeholder: string;
