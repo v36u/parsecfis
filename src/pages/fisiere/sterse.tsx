@@ -17,14 +17,22 @@ type Props = {
 
 const DeletedFilesPage: NextPage<Props> = ({ serverSession }) => {
   const [currentReceivedPage, setCurrentReceivedPage] = useState(1);
-  const { data: receivedFilesTablePageData, isLoading: isReceivedFilesTablePageDataLoading } = api.file.getReceivedFiles.useQuery({
+  const {
+    data: receivedFilesTablePageData,
+    isLoading: isReceivedFilesTablePageDataLoading,
+    refetch: refetchCurrentReceivedPage,
+  } = api.file.getReceivedFiles.useQuery({
     currentPage: currentReceivedPage,
     filesPerPage,
     deleted: true,
   });
 
   const [currentSentPage, setCurrentSentPage] = useState(1);
-  const { data: sentFilesTablePageData, isLoading: isSentFilesTablePageDataLoading } = api.file.getSentFiles.useQuery({
+  const {
+    data: sentFilesTablePageData,
+    isLoading: isSentFilesTablePageDataLoading,
+    refetch: refetchCurrentSentPage,
+  } = api.file.getSentFiles.useQuery({
     currentPage: currentSentPage,
     filesPerPage,
     deleted: true,
@@ -43,6 +51,7 @@ const DeletedFilesPage: NextPage<Props> = ({ serverSession }) => {
           session={serverSession}
           pageData={receivedFilesTablePageData ?? defaultFileTablePageData}
           isLoading={isReceivedFilesTablePageDataLoading}
+          refetchPageData={refetchCurrentReceivedPage}
           currentPage={currentReceivedPage}
           setCurrentPage={setCurrentReceivedPage}
         />
@@ -53,6 +62,7 @@ const DeletedFilesPage: NextPage<Props> = ({ serverSession }) => {
           session={serverSession}
           pageData={sentFilesTablePageData ?? defaultFileTablePageData}
           isLoading={isSentFilesTablePageDataLoading}
+          refetchPageData={refetchCurrentSentPage}
           currentPage={currentSentPage}
           setCurrentPage={setCurrentSentPage}
         />

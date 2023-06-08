@@ -77,7 +77,7 @@ export const nextAuthOptions: NextAuthOptions = {
 
           return authenticatedUser;
         } catch (_) {
-          throw new Error('Cheia privată nu este validă.');
+          throw new Error('Această cheie privată este invalidă.');
         }
       },
     },

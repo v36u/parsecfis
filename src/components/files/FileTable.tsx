@@ -1,5 +1,3 @@
-import { faDownload, faTrashCan } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import classNames from 'classnames';
 import { createECDH } from 'crypto';
 import { Tooltip } from 'flowbite-react';
@@ -10,8 +8,9 @@ import { type FileTablePageData, type FileTablePageRow } from '~/utils/@types/Fi
 import { api } from '~/utils/api';
 import { eccCurveName, filesPerPage } from '~/utils/constants';
 import { decrypt } from '~/utils/helpers/encryption';
+import { getFileTablePageRowKey } from '~/utils/helpers/file';
 import LoadingSpinner from '../shared/LoadingSpinner';
-import PublicKeyBadge from '../shared/PublicKeyBadge';
+import FileTableRow from './FileTableRow';
 
 const ELLIPSIS = '...';
 
@@ -24,12 +23,13 @@ type Props = {
 
   pageData: FileTablePageData;
   isLoading: boolean;
+  refetchPageData: () => void;
 
   currentPage: number;
   setCurrentPage: Dispatch<SetStateAction<number>>;
 };
 
-const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { rows, metadata }, isLoading, currentPage, setCurrentPage }) => {
+const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { rows, metadata }, isLoading, refetchPageData, currentPage, setCurrentPage }) => {
   invariant(!(sent && received) && (sent || received), 'Invalid file table parameters.');
 
   const handlePageChange = (page: number) => {
@@ -61,26 +61,25 @@ const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { ro
   const isFirstPage = currentPage === 1;
   const isLastPage = currentPage === metadata.totalPages;
 
-  const [rowToDownload, setRowToDownload] = useState<FileTablePageRow | null>(null);
-  const { data: downloadData } = api.file.initiateFileDownload.useQuery(rowToDownload as FileTablePageRow, {
-    enabled: !!rowToDownload,
+  const [rowBeingDownloaded, setRowBeingDownloaded] = useState<FileTablePageRow | null>(null);
+  const { data: downloadData } = api.file.initiateFileDownload.useQuery(rowBeingDownloaded as FileTablePageRow, {
+    enabled: !!rowBeingDownloaded,
   });
 
   const handleDownloadButtonClick = (row: FileTablePageRow) => {
-    setRowToDownload(row);
+    setRowBeingDownloaded(row);
   };
   useEffect(() => {
-    if (!rowToDownload || !downloadData) {
+    if (!rowBeingDownloaded || !downloadData) {
       return;
     }
-    setRowToDownload(null);
 
     fetch(downloadData.signedGetUrl)
       .then((response) => response.blob())
       .then((blob) => {
         const reader = new FileReader();
 
-        const { otherParticipantPublicKey } = rowToDownload;
+        const { otherParticipantPublicKey } = rowBeingDownloaded;
         const ecdh = createECDH(eccCurveName);
         ecdh.setPrivateKey(Buffer.from(session.user.privateKey, 'hex'));
 
@@ -107,7 +106,7 @@ const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { ro
           const url = window.URL.createObjectURL(decryptedBlob);
           const temporaryAnchor = document.createElement('a');
           temporaryAnchor.href = url;
-          temporaryAnchor.download = rowToDownload.fileName;
+          temporaryAnchor.download = rowBeingDownloaded.fileName;
           temporaryAnchor.style.display = 'none';
           temporaryAnchor.style.visibility = 'hidden';
           temporaryAnchor.style.opacity = '0';
@@ -123,12 +122,22 @@ const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { ro
       .catch((error) => {
         console.error(error);
       });
-  }, [downloadData, rowToDownload, session.user.privateKey]);
 
-  const { mutate: deleteFile } = api.file.deleteFile.useMutation();
+    setRowBeingDownloaded(null);
+  }, [downloadData, rowBeingDownloaded, session.user.privateKey]);
+
+  const [rowBeingDeleted, setRowBeingDeleted] = useState<FileTablePageRow | null>(null);
+  const { mutate: deleteFile, isSuccess: isDeleteFileSuccess } = api.file.deleteFile.useMutation();
   const handleDeleteButtonClick = (row: FileTablePageRow) => {
+    setRowBeingDeleted(row);
     deleteFile(row);
   };
+  useEffect(() => {
+    if (isDeleteFileSuccess) {
+      refetchPageData();
+      setRowBeingDeleted(null);
+    }
+  }, [isDeleteFileSuccess, refetchPageData]);
 
   return (
     <div
@@ -189,53 +198,21 @@ const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { ro
               </td>
             </tr>
           )}
-          {rows.map((row) => (
-            <tr
-              key={`${row.iv}-${row.sharedAt}-${row.otherParticipantPublicKey}-${row.fileName}`}
-              className="border-y bg-slate-50 bg-opacity-95 hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-600"
-            >
-              <td className="py-4 text-center">{row.fileName}</td>
-              <td className="py-4 text-center">
-                <PublicKeyBadge publicKey={row.otherParticipantPublicKey} />
-              </td>
-              <td className="py-4 text-center">{row.sharedAt}</td>
-              {deleted && <td className="py-4 text-center">{row.deletedAt}</td>}
-              {!deleted && (
-                <td className="flex items-center justify-center gap-6 py-4">
-                  <button
-                    type="button"
-                    className="font-medium text-blue-600 hover:underline dark:text-blue-500"
-                    onClick={() => handleDownloadButtonClick(row)}
-                  >
-                    <Tooltip
-                      content="Descărcare"
-                      animation="duration-500"
-                    >
-                      <FontAwesomeIcon
-                        icon={faDownload}
-                        size="lg"
-                      />
-                    </Tooltip>
-                  </button>
-                  <button
-                    type="button"
-                    className="font-medium text-blue-600 hover:underline dark:text-blue-500"
-                    onClick={() => handleDeleteButtonClick(row)}
-                  >
-                    <Tooltip
-                      content="Ștergere"
-                      animation="duration-500"
-                    >
-                      <FontAwesomeIcon
-                        icon={faTrashCan}
-                        size="lg"
-                      />
-                    </Tooltip>
-                  </button>
-                </td>
-              )}
-            </tr>
-          ))}
+          {rows.map((row) => {
+            const rowKey = getFileTablePageRowKey(row);
+
+            return (
+              <FileTableRow
+                key={rowKey}
+                deleted={deleted}
+                row={row}
+                handleDownload={handleDownloadButtonClick}
+                handleDelete={handleDeleteButtonClick}
+                downloadIsLoading={!!rowBeingDownloaded && getFileTablePageRowKey(rowBeingDownloaded) === rowKey}
+                deleteIsLoading={!!rowBeingDeleted && getFileTablePageRowKey(rowBeingDeleted) === rowKey}
+              />
+            );
+          })}
         </tbody>
       </table>
       {metadata.totalFiles > 1 && (

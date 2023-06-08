@@ -126,11 +126,6 @@ export const fileRouter = createTRPCRouter({
             publicKey: senderPublicKey,
           },
         },
-        skip: (currentPage - 1) * filesPerPage,
-        take: filesPerPage,
-        orderBy: {
-          sharedAt: 'desc',
-        },
       });
 
       const fileTablePageMetadata: FileTablePageMetadata = {
@@ -153,6 +148,11 @@ export const fileRouter = createTRPCRouter({
         },
         include: {
           receiver: true,
+        },
+        skip: (currentPage - 1) * filesPerPage,
+        take: filesPerPage,
+        orderBy: {
+          sharedAt: 'desc',
         },
       });
 

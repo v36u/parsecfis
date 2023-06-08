@@ -1,3 +1,5 @@
+import { type FileTablePageRow } from '../@types/FileTablePageData';
+
 export const getFormattedFileSize = (size: number) => {
   if (size === 0) {
     return '0 B';
@@ -9,4 +11,8 @@ export const getFormattedFileSize = (size: number) => {
   const unit = units[unitIndex] as string;
 
   return `${parseFloat((size / 1024 ** unitIndex).toFixed(2))} ${unit}`;
+};
+
+export const getFileTablePageRowKey = (row: FileTablePageRow) => {
+  return `${row.iv}-${row.sharedAt}-${row.otherParticipantPublicKey}-${row.fileName}`;
 };
