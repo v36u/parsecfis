@@ -1,5 +1,5 @@
 export type FileTablePageRow = {
-  publicKey: string;
+  otherParticipantPublicKey: string;
   fileName: string;
   sharedAt: string;
   deletedAt?: string;

@@ -1,11 +1,12 @@
-import { S3 } from '@aws-sdk/client-s3';
+import { GetObjectCommand, S3 } from '@aws-sdk/client-s3';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { TRPCError } from '@trpc/server';
 import { createECDH } from 'crypto';
 import { z } from 'zod';
 import { env } from '~/env.mjs';
 import { type FileTablePageData, type FileTablePageMetadata, type FileTablePageRow } from '~/utils/@types/FileTablePageData';
-import { maxFileSizeInBytes } from '~/utils/constants';
+import { eccCurveName, maxFileSizeInBytes } from '~/utils/constants';
 import { getUserKeysWithGuard } from '~/utils/helpers/auth';
 import { decrypt, encrypt } from '~/utils/helpers/encryption';
 import { getHumanReadableDate } from '~/utils/helpers/shared';
@@ -20,7 +21,7 @@ export const fileRouter = createTRPCRouter({
         deleted: z.boolean(),
       }),
     )
-    .query(async ({ ctx, input }) => {
+    .query(async ({ ctx, input: { filesPerPage, currentPage, deleted } }) => {
       const { publicKey: receiverPublicKey, privateKey: receiverPrivateKey } = getUserKeysWithGuard(ctx.session);
 
       const totalFiles = await ctx.prisma.appFile.count({
@@ -33,12 +34,12 @@ export const fileRouter = createTRPCRouter({
 
       const fileTablePageMetadata: FileTablePageMetadata = {
         totalFiles,
-        totalPages: Math.ceil(totalFiles / input.filesPerPage),
+        totalPages: Math.ceil(totalFiles / filesPerPage),
       };
 
       const currentPageFiles = await ctx.prisma.appFile.findMany({
         where: {
-          deletedAt: input.deleted
+          deletedAt: deleted
             ? {
                 not: null,
               }
@@ -52,6 +53,11 @@ export const fileRouter = createTRPCRouter({
         include: {
           sender: true,
         },
+        skip: (currentPage - 1) * filesPerPage,
+        take: filesPerPage,
+        orderBy: {
+          sharedAt: 'desc',
+        },
       });
 
       const fileTablePageRows = currentPageFiles.map((sentFile) => {
@@ -62,7 +68,7 @@ export const fileRouter = createTRPCRouter({
           deletedAt,
         } = sentFile;
 
-        const receiverEcdh = createECDH('secp256k1');
+        const receiverEcdh = createECDH(eccCurveName);
         receiverEcdh.setPrivateKey(Buffer.from(receiverPrivateKey, 'hex'));
 
         const symmetricKey = receiverEcdh.computeSecret(Buffer.from(senderPublicKey, 'hex')).toString('hex');
@@ -70,7 +76,7 @@ export const fileRouter = createTRPCRouter({
         const { decryptedBuffer: decryptedFileNameBuffer, iv } = decrypt(s3Key, symmetricKey);
 
         const fileTablePageRow: FileTablePageRow = {
-          publicKey: senderPublicKey,
+          otherParticipantPublicKey: senderPublicKey,
           fileName: decryptedFileNameBuffer.toString('utf-8'),
           sharedAt: getHumanReadableDate(sharedAt),
           iv: iv.toString('hex'),
@@ -97,12 +103,12 @@ export const fileRouter = createTRPCRouter({
         deleted: z.boolean(),
       }),
     )
-    .query(async ({ ctx, input }) => {
+    .query(async ({ ctx, input: { filesPerPage, currentPage, deleted } }) => {
       const { publicKey: senderPublicKey, privateKey: senderPrivateKey } = getUserKeysWithGuard(ctx.session);
 
       const totalFiles = await ctx.prisma.appFile.count({
         where: {
-          deletedAt: input.deleted
+          deletedAt: deleted
             ? {
                 not: null,
               }
@@ -113,11 +119,16 @@ export const fileRouter = createTRPCRouter({
             publicKey: senderPublicKey,
           },
         },
+        skip: (currentPage - 1) * filesPerPage,
+        take: filesPerPage,
+        orderBy: {
+          sharedAt: 'desc',
+        },
       });
 
       const fileTablePageMetadata: FileTablePageMetadata = {
         totalFiles,
-        totalPages: Math.ceil(totalFiles / input.filesPerPage),
+        totalPages: Math.ceil(totalFiles / filesPerPage),
       };
 
       const currentPageFiles = await ctx.prisma.appFile.findMany({
@@ -139,7 +150,7 @@ export const fileRouter = createTRPCRouter({
           deletedAt,
         } = sentFile;
 
-        const senderEcdh = createECDH('secp256k1');
+        const senderEcdh = createECDH(eccCurveName);
         senderEcdh.setPrivateKey(Buffer.from(senderPrivateKey, 'hex'));
 
         const symmetricKey = senderEcdh.computeSecret(Buffer.from(receiverPublicKey, 'hex')).toString('hex');
@@ -147,11 +158,13 @@ export const fileRouter = createTRPCRouter({
         const { decryptedBuffer: decryptedFileNameBuffer, iv } = decrypt(s3Key, symmetricKey);
 
         const fileTablePageRow: FileTablePageRow = {
-          publicKey: receiverPublicKey,
+          otherParticipantPublicKey: receiverPublicKey,
           fileName: decryptedFileNameBuffer.toString('utf-8'),
           sharedAt: getHumanReadableDate(sharedAt),
           iv: iv.toString('hex'),
         };
+
+        console.log(fileTablePageRow.iv);
         if (deletedAt) {
           fileTablePageRow.deletedAt = getHumanReadableDate(deletedAt);
         }
@@ -178,19 +191,23 @@ export const fileRouter = createTRPCRouter({
         fileType: z.string(),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input: { receiverIdentifier, fileName, fileType } }) => {
       const { privateKey: senderPrivateKey, publicKey: senderPublicKey } = getUserKeysWithGuard(ctx.session);
 
       const receiver = await ctx.prisma.appUser.findFirst({
         where: {
           OR: [
             {
-              publicKey: input.receiverIdentifier,
+              publicKey: receiverIdentifier,
             },
             {
-              email: input.receiverIdentifier,
+              email: receiverIdentifier,
             },
           ],
+        },
+        select: {
+          id: true,
+          publicKey: true,
         },
       });
       if (!receiver) {
@@ -207,17 +224,17 @@ export const fileRouter = createTRPCRouter({
         });
       }
 
-      const senderEcdh = createECDH('secp256k1');
+      const senderEcdh = createECDH(eccCurveName);
       senderEcdh.setPrivateKey(Buffer.from(senderPrivateKey, 'hex'));
 
       const symmetricKey = senderEcdh.computeSecret(Buffer.from(receiver.publicKey, 'hex')).toString('hex');
 
       const s3 = new S3({});
       const presignedPost = await createPresignedPost(s3, {
-        Key: encrypt(input.fileName, symmetricKey).encryptedBuffer.toString('hex'),
+        Key: encrypt(fileName, symmetricKey).encryptedBuffer.toString('hex'),
         Bucket: env.AWS_S3_BUCKET_NAME,
         Fields: {
-          'Content-Type': input.fileType,
+          'Content-Type': fileType,
         },
         Expires: 5, // secunde
         Conditions: [['content-length-range', 0, maxFileSizeInBytes]],
@@ -231,7 +248,7 @@ export const fileRouter = createTRPCRouter({
         });
       }
 
-      const withSenderId = await ctx.prisma.appUser.findFirst({
+      const sender = await ctx.prisma.appUser.findFirst({
         where: {
           publicKey: senderPublicKey,
         },
@@ -239,7 +256,7 @@ export const fileRouter = createTRPCRouter({
           id: true,
         },
       });
-      if (!withSenderId) {
+      if (!sender) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'A intervenit o eroare. Te rugăm să te reautentifici.',
@@ -248,15 +265,46 @@ export const fileRouter = createTRPCRouter({
 
       await ctx.prisma.appFile.create({
         data: {
-          senderId: withSenderId.id,
+          senderId: sender.id,
           receiverId: receiver.id,
           s3Key: presignedPostKey,
         },
       });
 
       return {
-        symmetricKey,
+        receiverPublicKey: receiver.publicKey,
         presignedPost,
+      };
+    }),
+  initiateFileDownload: publicProcedure
+    .input(
+      z.object({
+        otherParticipantPublicKey: z.string(),
+        fileName: z.string(),
+        iv: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input: { otherParticipantPublicKey, fileName, iv } }) => {
+      const { privateKey } = getUserKeysWithGuard(ctx.session);
+
+      const ecdh = createECDH(eccCurveName);
+      ecdh.setPrivateKey(Buffer.from(privateKey, 'hex'));
+
+      const symmetricKey = ecdh.computeSecret(Buffer.from(otherParticipantPublicKey, 'hex')).toString('hex');
+
+      console.log(iv);
+
+      const s3 = new S3({});
+      const command = new GetObjectCommand({
+        Key: encrypt(fileName, symmetricKey, Buffer.from(iv, 'hex')).encryptedBuffer.toString('hex'),
+        Bucket: env.AWS_S3_BUCKET_NAME,
+      });
+      const signedGetUrl = await getSignedUrl(s3, command, {
+        expiresIn: 5, // secunde
+      });
+
+      return {
+        signedGetUrl,
       };
     }),
 });

@@ -3,6 +3,7 @@ lockfileVersion: 5.4
 specifiers:
   '@aws-sdk/client-s3': ^3.345.0
   '@aws-sdk/s3-presigned-post': ^3.345.0
+  '@aws-sdk/s3-request-presigner': ^3.345.0
   '@fortawesome/fontawesome-free': ^6.4.0
   '@fortawesome/fontawesome-svg-core': ^6.4.0
   '@fortawesome/free-solid-svg-icons': ^6.4.0
@@ -50,6 +51,7 @@ specifiers:
 dependencies:
   '@aws-sdk/client-s3': 3.345.0
   '@aws-sdk/s3-presigned-post': 3.345.0
+  '@aws-sdk/s3-request-presigner': 3.345.0
   '@fortawesome/fontawesome-free': 6.4.0
   '@fortawesome/fontawesome-svg-core': 6.4.0
   '@fortawesome/free-solid-svg-icons': 6.4.0
@@ -810,6 +812,21 @@ packages:
     transitivePeerDependencies:
       - '@aws-sdk/signature-v4-crt'
       - aws-crt
+    dev: false
+
+  /@aws-sdk/s3-request-presigner/3.345.0:
+    resolution: {integrity: sha512-xtmYp0d5OzYoiXo2Vw4JtIyW40OvFU68keC4p4Ik9ttQVVQIQ9kgphxBGAYezgcXNBbxeZ/VJUZuP7SkbVlyWA==}
+    engines: {node: '>=14.0.0'}
+    dependencies:
+      '@aws-sdk/middleware-endpoint': 3.344.0
+      '@aws-sdk/protocol-http': 3.342.0
+      '@aws-sdk/signature-v4-multi-region': 3.344.0
+      '@aws-sdk/smithy-client': 3.342.0
+      '@aws-sdk/types': 3.342.0
+      '@aws-sdk/util-format-url': 3.342.0
+      tslib: 2.5.0
+    transitivePeerDependencies:
+      - '@aws-sdk/signature-v4-crt'
     dev: false
 
   /@aws-sdk/service-error-classification/3.342.0:

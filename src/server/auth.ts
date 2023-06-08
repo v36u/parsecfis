@@ -4,23 +4,24 @@ import { type GetServerSidePropsContext } from 'next';
 import { getServerSession, type DefaultSession, type NextAuthOptions, type User } from 'next-auth';
 import { env } from '~/env.mjs';
 import { prisma } from '~/server/db';
+import { eccCurveName } from '~/utils/constants';
 
 declare module 'next-auth' {
   interface Session extends DefaultSession {
     user: {
-      publicKey: string;
       privateKey: string;
+      publicKey: string;
     };
   }
 
   interface User {
-    publicKey: string;
     privateKey: string;
+    publicKey: string;
   }
 
   interface Profile {
-    publicKey: string;
     privateKey: string;
+    publicKey: string;
   }
 }
 
@@ -52,7 +53,7 @@ export const nextAuthOptions: NextAuthOptions = {
         }
 
         try {
-          const ecdh = createECDH('secp256k1');
+          const ecdh = createECDH(eccCurveName);
           ecdh.setPrivateKey(Buffer.from(credentials.privateKey, 'hex'));
 
           const publicKey = ecdh.getPublicKey('hex');
@@ -95,13 +96,15 @@ export const nextAuthOptions: NextAuthOptions = {
         return token;
       }
 
-      token.publicKey = user.publicKey;
       token.privateKey = user.privateKey;
+      token.publicKey = user.publicKey;
       return token;
     },
     session({ session, token }) {
-      session.user.publicKey = token.publicKey;
-      session.user.privateKey = token.privateKey;
+      session.user = {
+        privateKey: token.privateKey,
+        publicKey: token.publicKey,
+      };
       return session;
     },
   },

@@ -1,14 +1,14 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 
-const ivBytes = 32;
+const ivBytes = 16;
 
 /**
  * Encrypts a string or a buffer
  */
-export const encrypt = (value: string | Buffer, key: string) => {
+export const encrypt = (value: string | Buffer, key: string, ivParam: Buffer | null = null) => {
   const buffer = typeof value === 'string' ? Buffer.from(value) : value;
 
-  const iv = randomBytes(ivBytes);
+  const iv = ivParam ?? randomBytes(ivBytes);
   const keyBuffer = Buffer.from(key, 'hex');
   const cipher = createCipheriv('aes-256-cbc', keyBuffer, iv);
 

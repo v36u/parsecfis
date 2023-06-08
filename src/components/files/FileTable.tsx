@@ -1,11 +1,15 @@
 import { faDownload, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import classNames from 'classnames';
+import { createECDH } from 'crypto';
 import { Tooltip } from 'flowbite-react';
-import { useMemo, type Dispatch, type FC, type SetStateAction } from 'react';
+import { type Session } from 'next-auth';
+import { useEffect, useMemo, useState, type Dispatch, type FC, type SetStateAction } from 'react';
 import invariant from 'tiny-invariant';
-import { type FileTablePageData } from '~/utils/@types/FileTablePageData';
-import { filesPerPage } from '~/utils/constants';
+import { type FileTablePageData, type FileTablePageRow } from '~/utils/@types/FileTablePageData';
+import { api } from '~/utils/api';
+import { eccCurveName, filesPerPage } from '~/utils/constants';
+import { decrypt } from '~/utils/helpers/encryption';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import PublicKeyBadge from '../shared/PublicKeyBadge';
 
@@ -16,6 +20,8 @@ type Props = {
   sent?: boolean;
   received?: boolean;
 
+  session: Session;
+
   pageData: FileTablePageData;
   isLoading: boolean;
 
@@ -23,7 +29,7 @@ type Props = {
   setCurrentPage: Dispatch<SetStateAction<number>>;
 };
 
-const FileTable: FC<Props> = ({ sent, received, deleted, pageData: { rows, metadata }, isLoading, currentPage, setCurrentPage }) => {
+const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { rows, metadata }, isLoading, currentPage, setCurrentPage }) => {
   invariant(!(sent && received) && (sent || received), 'Invalid file table parameters.');
 
   const handlePageChange = (page: number) => {
@@ -54,6 +60,73 @@ const FileTable: FC<Props> = ({ sent, received, deleted, pageData: { rows, metad
 
   const isFirstPage = currentPage === 1;
   const isLastPage = currentPage === metadata.totalPages;
+
+  const [rowToDownload, setRowToDownload] = useState<FileTablePageRow | null>(null);
+  const { data: downloadData } = api.file.initiateFileDownload.useQuery(rowToDownload as FileTablePageRow, {
+    enabled: !!rowToDownload,
+  });
+
+  const handleDownloadButtonClick = (row: FileTablePageRow) => {
+    setRowToDownload(row);
+  };
+  useEffect(() => {
+    if (!rowToDownload || !downloadData) {
+      return;
+    }
+
+    fetch(downloadData.signedGetUrl)
+      .then((response) => response.blob())
+      .then((blob) => {
+        const reader = new FileReader();
+
+        const { otherParticipantPublicKey } = rowToDownload;
+        const ecdh = createECDH(eccCurveName);
+        ecdh.setPrivateKey(Buffer.from(session.user.privateKey, 'hex'));
+
+        const symmetricKey = ecdh.computeSecret(Buffer.from(otherParticipantPublicKey, 'hex')).toString('hex');
+
+        reader.onloadend = (event) => {
+          const result = event.target?.result;
+          if (!result) {
+            console.error('A intervenit o eroare. Te rugăm să reîncerci.');
+            return;
+          }
+
+          let resultBuffer: Buffer | null = null;
+          if (typeof result === 'string') {
+            resultBuffer = Buffer.from(result);
+          } else {
+            resultBuffer = Buffer.from(new Uint8Array(result));
+          }
+          const { decryptedBuffer: decryptedResultBuffer } = decrypt(resultBuffer, symmetricKey);
+          const decryptedBlob = new Blob([decryptedResultBuffer], {
+            type: blob.type,
+          });
+
+          const url = window.URL.createObjectURL(decryptedBlob);
+          const temporaryAnchor = document.createElement('a');
+          temporaryAnchor.href = url;
+          temporaryAnchor.download = rowToDownload.fileName;
+          temporaryAnchor.style.display = 'none';
+          temporaryAnchor.style.visibility = 'hidden';
+          temporaryAnchor.style.opacity = '0';
+
+          document.body.appendChild(temporaryAnchor);
+          temporaryAnchor.click();
+
+          temporaryAnchor.remove();
+        };
+
+        reader.readAsArrayBuffer(blob);
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+
+    setRowToDownload(null);
+  }, [downloadData, rowToDownload, session.user.privateKey]);
+
+  const handleDeleteButtonClick = () => {};
 
   return (
     <div
@@ -109,24 +182,28 @@ const FileTable: FC<Props> = ({ sent, received, deleted, pageData: { rows, metad
                 className="py-4 text-center"
                 colSpan={4}
               >
-                {sent && deleted ? 'Nu ai șters niciun fișier trimis încă.' : 'Nu ai trimis niciun fișier încă.'}
-                {received && deleted ? 'Nu ai șters niciun fișier primit încă.' : 'Nu ai primit niciun fișier încă.'}
+                {sent && (deleted ? 'Nu ai șters niciun fișier trimis încă.' : 'Nu ai trimis niciun fișier încă.')}
+                {received && (deleted ? 'Nu ai șters niciun fișier primit încă.' : 'Nu ai primit niciun fișier încă.')}
               </td>
             </tr>
           )}
-          {rows.map((file) => (
+          {rows.map((row) => (
             <tr
-              key={`${file.iv}-${file.sharedAt}-${file.publicKey}-${file.fileName}`}
+              key={`${row.iv}-${row.sharedAt}-${row.otherParticipantPublicKey}-${row.fileName}`}
               className="border-y bg-slate-50 bg-opacity-95 hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-600"
             >
-              <td className="py-4 text-center">{file.fileName}</td>
+              <td className="py-4 text-center">{row.fileName}</td>
               <td className="py-4 text-center">
-                <PublicKeyBadge publicKey={file.publicKey} />
+                <PublicKeyBadge publicKey={row.otherParticipantPublicKey} />
               </td>
-              <td className="py-4 text-center">{file.sharedAt}</td>
+              <td className="py-4 text-center">{row.sharedAt}</td>
               {!deleted && (
                 <td className="flex items-center justify-center gap-6 py-4">
-                  <button className="font-medium text-blue-600 hover:underline dark:text-blue-500">
+                  <button
+                    type="button"
+                    className="font-medium text-blue-600 hover:underline dark:text-blue-500"
+                    onClick={() => handleDownloadButtonClick(row)}
+                  >
                     <Tooltip
                       content="Descărcare"
                       animation="duration-500"
@@ -137,7 +214,11 @@ const FileTable: FC<Props> = ({ sent, received, deleted, pageData: { rows, metad
                       />
                     </Tooltip>
                   </button>
-                  <button className="font-medium text-blue-600 hover:underline dark:text-blue-500">
+                  <button
+                    type="button"
+                    className="font-medium text-blue-600 hover:underline dark:text-blue-500"
+                    onClick={() => handleDeleteButtonClick()}
+                  >
                     <Tooltip
                       content="Ștergere"
                       animation="duration-500"

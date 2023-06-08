@@ -1,11 +1,13 @@
 import { faSatelliteDish } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import classNames from 'classnames';
+import { createECDH } from 'crypto';
+import { type Session } from 'next-auth';
 import Link from 'next/link';
 import { useCallback, useEffect, useState, type ChangeEvent, type FC } from 'react';
 import Particles from 'react-particles';
 import { api } from '~/utils/api';
-import { maxFileSizeInBytes } from '~/utils/constants';
+import { eccCurveName, maxFileSizeInBytes } from '~/utils/constants';
 import { encrypt } from '~/utils/helpers/encryption';
 import { getFormattedFileSize } from '~/utils/helpers/file';
 import { useAppError } from '~/utils/hooks/useAppError';
@@ -14,7 +16,11 @@ import LoadingSpinner from '../shared/LoadingSpinner';
 
 let dragCounter = 0;
 
-const AuthenticatedHomeContent: FC = () => {
+type Props = {
+  session: Session;
+};
+
+const AuthenticatedHomeContent: FC<Props> = ({ session }) => {
   const [file, setFile] = useState<File | undefined>(undefined);
   const [receiverIdentifier, setReceiverIdentifier] = useState('');
   const {
@@ -129,10 +135,14 @@ const AuthenticatedHomeContent: FC = () => {
       return;
     }
 
-    const { symmetricKey, presignedPost } = shareFileData;
+    const { receiverPublicKey, presignedPost } = shareFileData;
+    const senderEcdh = createECDH(eccCurveName);
+    senderEcdh.setPrivateKey(Buffer.from(session.user.privateKey, 'hex'));
 
-    const render = new FileReader();
-    render.onload = async (event) => {
+    const symmetricKey = senderEcdh.computeSecret(Buffer.from(receiverPublicKey, 'hex')).toString('hex');
+
+    const reader = new FileReader();
+    reader.onloadend = async (event) => {
       const result = event.target?.result;
       if (!result) {
         setGeneralError('A intervenit o eroare. Te rugăm să reîncerci.');
@@ -171,8 +181,8 @@ const AuthenticatedHomeContent: FC = () => {
       }
     };
 
-    render.readAsArrayBuffer(file);
-  }, [file, isShareFileError, isShareFileSuccess, processedReceiverError, shareFileData]);
+    reader.readAsArrayBuffer(file);
+  }, [file, isShareFileError, isShareFileSuccess, processedReceiverError, session.user.privateKey, shareFileData]);
 
   useEffect(() => {
     if (!displaySuccessMessage) {
@@ -294,6 +304,7 @@ const AuthenticatedHomeContent: FC = () => {
           <div className="z-10 mt-1 bg-gradient-to-br from-red-800 to-red-500 bg-clip-text text-sm font-bold text-transparent">{fileError}</div>
 
           <button
+            type="button"
             onClick={handleSendButtonClick}
             className={classNames(
               'group relative mt-3 inline-flex items-center justify-center overflow-hidden rounded-lg p-0.5 text-sm font-medium text-gray-900 hover:text-slate-50 focus:outline-none focus:ring-4 focus:ring-purple-300 group-hover:from-purple-600 group-hover:to-blue-500 dark:text-slate-50 dark:focus:ring-blue-800',
@@ -435,7 +446,7 @@ const FileSharedSuccessfullyParticles: FC = () => {
           life: {
             count: 0,
             duration: 0.1,
-            delay: 0.4,
+            delay: 0.2,
           },
           rate: {
             delay: 0.25,

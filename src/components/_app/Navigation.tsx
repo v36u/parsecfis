@@ -66,6 +66,7 @@ const Navigation: FC = () => {
               Fișiere
             </Link>
             <button
+              type="button"
               onClick={handleLogoutButtonClick}
               className={classNames(linkClassNames, 'flex items-center gap-2')}
             >

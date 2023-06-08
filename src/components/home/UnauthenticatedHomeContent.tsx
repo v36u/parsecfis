@@ -79,6 +79,7 @@ const UnauthenticatedHomeContent: FC = () => {
         </span>
       </button>
       <button
+        type="button"
         className="inline-flex rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 p-0.5 text-center text-sm font-medium text-slate-50 shadow-lg shadow-purple-500/50 hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-purple-300 dark:shadow-lg dark:shadow-purple-800/80 dark:focus:ring-purple-800"
         onClick={handleGenerateButtonClick}
       >
