@@ -42,7 +42,10 @@ const FileTableRow: FC<Props> = ({ row, deleted, handleDownload, handleDelete, d
     <tr className="border-y bg-slate-50 bg-opacity-95 hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-600">
       <td className="py-4 text-center">{row.fileName}</td>
       <td className="py-4 text-center">
-        <PublicKeyBadge publicKey={row.otherParticipantPublicKey} />
+        <PublicKeyBadge
+          publicKey={row.otherParticipantPublicKey}
+          displayProfileButton
+        />
       </td>
       <td className="py-4 text-center">{row.sharedAt}</td>
       {deleted && <td className="py-4 text-center">{row.deletedAt}</td>}

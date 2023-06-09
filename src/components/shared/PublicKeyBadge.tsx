@@ -1,12 +1,15 @@
-import { faCheck, faCopy, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faCopy, faUser, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import Link from 'next/link';
 import { useCallback, useEffect, useState, type FC } from 'react';
 
 type Props = {
   publicKey: string;
+  displayCopyButton?: boolean;
+  displayProfileButton?: boolean;
 };
 
-const PublicKeyBadge: FC<Props> = ({ publicKey }) => {
+const PublicKeyBadge: FC<Props> = ({ publicKey, displayCopyButton, displayProfileButton }) => {
   const [actualPublicKey, setActualPublicKey] = useState(publicKey);
   useEffect(() => {
     setActualPublicKey(publicKey);
@@ -34,15 +37,26 @@ const PublicKeyBadge: FC<Props> = ({ publicKey }) => {
       <span className="py-gap-0.5.5 mr-2 rounded border border-purple-400 bg-purple-100 px-2.5 text-xs font-medium text-purple-800 dark:bg-gray-700 dark:text-purple-400">
         {shortenedPublicKey}
       </span>
-      <button
-        type="button"
-        title="Copiază cheia publică în clipboard"
-        className="py-gap-0.5.5 mr-2 rounded border border-purple-900 bg-yellow-100 px-1 text-xs font-medium text-purple-800 dark:bg-gray-700 dark:text-purple-400"
-        disabled={copyButtonIcon.iconName === faCheck.iconName}
-        onClick={handleCopyButtonClick}
-      >
-        <FontAwesomeIcon icon={copyButtonIcon} />
-      </button>
+      {displayCopyButton && (
+        <button
+          type="button"
+          title="Copiază cheia publică în clipboard"
+          className="py-gap-0.5.5 mr-2 rounded border border-purple-900 bg-yellow-100 px-1 text-xs font-medium text-purple-800 dark:bg-gray-700 dark:text-purple-400"
+          disabled={copyButtonIcon.iconName === faCheck.iconName}
+          onClick={handleCopyButtonClick}
+        >
+          <FontAwesomeIcon icon={copyButtonIcon} />
+        </button>
+      )}
+      {displayProfileButton && (
+        <Link
+          href={`/profil/${publicKey}/`}
+          title="Vezi profilul"
+          className="py-gap-0.5.5 mr-2 rounded border border-purple-900 bg-yellow-100 px-1 text-xs font-medium text-purple-800 dark:bg-gray-700 dark:text-purple-400"
+        >
+          <FontAwesomeIcon icon={faUser} />
+        </Link>
+      )}
     </div>
   );
 };
