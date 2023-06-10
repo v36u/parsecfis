@@ -1,6 +1,7 @@
 import classNames from 'classnames';
+import { Button, Modal } from 'flowbite-react';
 import { signIn } from 'next-auth/react';
-import { useCallback, useState, type ChangeEvent, type FC } from 'react';
+import { useState, type ChangeEvent, type FC } from 'react';
 import { api } from '~/utils/api';
 import LoadingSpinner from '../shared/LoadingSpinner';
 
@@ -13,9 +14,24 @@ const UnauthenticatedHomeContent: FC = () => {
     setPrivateKey(event.target.value);
   };
 
+  const [displayConfirmationModal, setDisplayConfirmationModal] = useState(false);
+
   const [error, setError] = useState('');
-  const handleAuthenticateButtonClick = useCallback(async () => {
+  const handleAuthenticateButtonClick = () => {
+    if (privateKey.length < 1) {
+      setError('Cheia privată nu a fost furnizată.');
+      return;
+    }
+
     setError('');
+    setDisplayConfirmationModal(true);
+  };
+  const handleModalClose = () => {
+    setDisplayConfirmationModal(false);
+  };
+  const handleISavedButtonClick = async () => {
+    handleModalClose();
+
     setIsLoading(true);
 
     const response = await signIn('private-key', {
@@ -28,9 +44,12 @@ const UnauthenticatedHomeContent: FC = () => {
       setIsLoading(false);
       return;
     }
-  }, [privateKey]);
+  };
+  const handleIDidNotSaveButtonClick = () => {
+    handleModalClose();
+  };
 
-  const handleGenerateButtonClick = useCallback(async () => {
+  const handleGenerateButtonClick = async () => {
     setError('');
     const privateKey = keyPairQuery.data;
 
@@ -41,7 +60,7 @@ const UnauthenticatedHomeContent: FC = () => {
 
     setPrivateKey(privateKey);
     await keyPairQuery.refetch();
-  }, [keyPairQuery]);
+  };
 
   return (
     <>
@@ -78,6 +97,67 @@ const UnauthenticatedHomeContent: FC = () => {
           Autentificare
         </span>
       </button>
+      <Modal
+        show={displayConfirmationModal}
+        onClose={handleModalClose}
+      >
+        <Modal.Header>Confirmare autentificare</Modal.Header>
+        <Modal.Body>
+          <div className="space-y-6">
+            <p className="text-base leading-relaxed text-gray-500 dark:text-gray-400">
+              Înainte de a continua, este esențial să îți asiguri siguranța datelor prin salvarea cheii private pe care ai introdus-o. Te rugăm să acorzi o
+              atenție deosebită acestui pas, <em>în special dacă este prima dată când folosești Parsecfis</em>.
+            </p>
+            <p className="text-base leading-relaxed text-gray-500 dark:text-gray-400">
+              Această cheie privată este un instrument unic și esențial pentru criptarea și accesarea fișierelor tale. Odată salvată, nu există nicio metodă
+              prin care noi putem să o recuperăm sau să o reînnoim în numele tău. Prin urmare, este crucial să o salvezi într-un loc sigur și accesibil pentru
+              tine.
+            </p>
+            <p className="text-base leading-relaxed text-gray-500 dark:text-gray-400">
+              Dacă pierzi această cheie, <strong>vei pierde accesul la toate fișierele tale criptate</strong>, deoarece acestea nu pot fi decriptate fără ea.
+              Aceasta este o măsură de securitate puternică care îți protejează datele, dar care necesită de asemenea și responsabilitate din partea ta pentru
+              a-ți asigura accesul la acestea în viitor.
+            </p>
+            <p className="text-base leading-relaxed text-gray-500 dark:text-gray-400">
+              Recomandări de stocare:
+              <ol className="list-inside list-decimal space-y-4 text-gray-500 dark:text-gray-400">
+                <li>
+                  <strong>Stocarea offline (Recomandată):</strong> Stocarea offline este cea mai sigură metodă. Există două modalități principale prin care poți
+                  stoca cheia offline:
+                  <ol className="mt-2 list-inside list-disc space-y-1 pl-5">
+                    <li>
+                      <strong>Hârtie:</strong> Poți să-ți scrii manual cheia pe o bucată de hârtie sau să o printezi și apoi să o păstrezi într-un loc sigur,
+                      cum ar fi un seif.
+                    </li>
+                    <li>
+                      <strong>Dispozitiv de stocare offline:</strong> Poți utiliza un dispozitiv de stocare offline, precum un stick USB sau un YubiKey, pe care
+                      îl păstrezi într-un loc sigur.
+                    </li>
+                  </ol>
+                </li>
+                <li>
+                  <strong>Manager de parole:</strong> Există multe aplicații specializate pentru stocarea în siguranță a parolelor și cheilor private. Acestea
+                  folosesc criptare de nivel înalt pentru a-ți proteja informațiile. Unele exemple populare includ LastPass, 1Password și Bitwarden.
+                </li>
+                <li>
+                  <strong>Stocare pe dispozitivul tău:</strong> Poți stoca cheia pe computerul sau telefonul tău, într-un fișier. Totuși, pentru a asigura un
+                  nivel înalt de securitate, îți recomandăm să folosești un fișier criptat. Sistemele de operare moderne oferă metode de criptare a fișierelor.
+                  Asigură-te că ai o parolă puternică pentru acest fișier.
+                </li>
+              </ol>
+            </p>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onClick={handleISavedButtonClick}>Am salvat cheia privată</Button>
+          <Button
+            color="gray"
+            onClick={handleIDidNotSaveButtonClick}
+          >
+            Încă nu am salvat
+          </Button>
+        </Modal.Footer>
+      </Modal>
       <button
         type="button"
         className="inline-flex rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 p-0.5 text-center text-sm font-medium text-slate-50 shadow-lg shadow-purple-500/50 hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-purple-300 dark:shadow-lg dark:shadow-purple-800/80 dark:focus:ring-purple-800"

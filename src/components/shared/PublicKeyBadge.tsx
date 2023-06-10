@@ -1,5 +1,6 @@
 import { faCheck, faCopy, faUser, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Tooltip } from 'flowbite-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState, type FC } from 'react';
 
@@ -33,29 +34,37 @@ const PublicKeyBadge: FC<Props> = ({ publicKey, displayCopyButton, displayProfil
   }, [actualPublicKey]);
 
   return (
-    <div className="inline-flex italic">
-      <span className="py-gap-0.5.5 mr-2 rounded border border-purple-400 bg-purple-100 px-2.5 text-xs font-medium text-purple-800 dark:bg-gray-700 dark:text-purple-400">
+    <div className="inline-flex ">
+      <span className="py-gap-0.5.5 mr-2 rounded border border-purple-400 bg-purple-100 px-2.5 text-xs font-medium italic text-purple-800 dark:bg-gray-700 dark:text-purple-400">
         {shortenedPublicKey}
       </span>
       {displayCopyButton && (
-        <button
-          type="button"
-          title="Copiază cheia publică în clipboard"
-          className="py-gap-0.5.5 mr-2 rounded border border-purple-900 bg-yellow-100 px-1 text-xs font-medium text-purple-800 dark:bg-gray-700 dark:text-purple-400"
-          disabled={copyButtonIcon.iconName === faCheck.iconName}
-          onClick={handleCopyButtonClick}
+        <Tooltip
+          content="Copiază cheia publică"
+          animation="duration-500"
         >
-          <FontAwesomeIcon icon={copyButtonIcon} />
-        </button>
+          <button
+            type="button"
+            className="py-gap-0.5.5 mr-2 rounded border border-purple-900 bg-yellow-100 px-1 text-xs font-medium text-purple-800 dark:bg-gray-700 dark:text-purple-400"
+            disabled={copyButtonIcon.iconName === faCheck.iconName}
+            onClick={handleCopyButtonClick}
+          >
+            <FontAwesomeIcon icon={copyButtonIcon} />
+          </button>
+        </Tooltip>
       )}
       {displayProfileButton && (
-        <Link
-          href={`/profil/${publicKey}/`}
-          title="Vezi profilul"
-          className="py-gap-0.5.5 mr-2 rounded border border-purple-900 bg-yellow-100 px-1 text-xs font-medium text-purple-800 dark:bg-gray-700 dark:text-purple-400"
+        <Tooltip
+          content="Vezi profilul"
+          animation="duration-500"
         >
-          <FontAwesomeIcon icon={faUser} />
-        </Link>
+          <Link
+            href={`/profil/${publicKey}/`}
+            className="py-gap-0.5.5 mr-2 rounded border border-purple-900 bg-yellow-100 px-1 text-xs font-medium text-purple-800 dark:bg-gray-700 dark:text-purple-400"
+          >
+            <FontAwesomeIcon icon={faUser} />
+          </Link>
+        </Tooltip>
       )}
     </div>
   );
