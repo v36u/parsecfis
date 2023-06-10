@@ -4,6 +4,7 @@ export type FileTablePageRow = {
   sharedAt: string;
   deletedAt?: string;
   iv: string;
+  isNew: boolean;
 };
 
 export type FileTablePageMetadata = {

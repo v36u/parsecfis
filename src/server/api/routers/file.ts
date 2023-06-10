@@ -73,6 +73,7 @@ export const fileRouter = createTRPCRouter({
           s3Key,
           sharedAt,
           deletedAt,
+          downloadedByReceiverAt,
         } = sentFile;
 
         const receiverEcdh = createECDH(eccCurveName);
@@ -86,6 +87,7 @@ export const fileRouter = createTRPCRouter({
           otherParticipantPublicKey: senderPublicKey,
           fileName: decryptedFileNameBuffer.toString('utf-8'),
           sharedAt: getHumanReadableDate(sharedAt),
+          isNew: !!downloadedByReceiverAt,
           iv: iv.toString('hex'),
         };
         if (deletedAt) {
@@ -162,6 +164,7 @@ export const fileRouter = createTRPCRouter({
           s3Key,
           sharedAt,
           deletedAt,
+          downloadedByReceiverAt,
         } = sentFile;
 
         const senderEcdh = createECDH(eccCurveName);
@@ -175,9 +178,9 @@ export const fileRouter = createTRPCRouter({
           otherParticipantPublicKey: receiverPublicKey,
           fileName: decryptedFileNameBuffer.toString('utf-8'),
           sharedAt: getHumanReadableDate(sharedAt),
+          isNew: !!downloadedByReceiverAt,
           iv: iv.toString('hex'),
         };
-
         if (deletedAt) {
           fileTablePageRow.deletedAt = getHumanReadableDate(deletedAt);
         }
@@ -316,6 +319,30 @@ export const fileRouter = createTRPCRouter({
         expiresIn: 5, // secunde
       });
 
+      const fileReceived = await ctx.prisma.appFile.findFirst({
+        where: {
+          s3Key,
+          receiver: {
+            publicKey: {
+              not: otherParticipantPublicKey,
+            },
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+      if (fileReceived) {
+        await ctx.prisma.appFile.update({
+          where: {
+            id: fileReceived.id,
+          },
+          data: {
+            downloadedByReceiverAt: new Date(),
+          },
+        });
+      }
+
       return {
         signedGetUrl,
       };
@@ -354,4 +381,20 @@ export const fileRouter = createTRPCRouter({
         },
       });
     }),
+  getNumberOfNewReceivedFiles: publicProcedure.query(async ({ ctx }) => {
+    const { publicKey } = getUserKeysWithGuard(ctx.session);
+
+    const numberOfNewReceivedFiles = await ctx.prisma.appFile.count({
+      where: {
+        receiver: {
+          publicKey,
+        },
+        downloadedByReceiverAt: {
+          equals: null,
+        },
+      },
+    });
+
+    return numberOfNewReceivedFiles;
+  }),
 });

@@ -44,7 +44,12 @@ const DeletedFilesPage: NextPage<Props> = ({ serverSession }) => {
         <title>Coș de gunoi &mdash; Parsecfis</title>
       </Head>
       <div className="flex w-full flex-col items-center justify-center">
-        <h1 className="mb-6 text-3xl font-bold">Fișiere primite șterse</h1>
+        <h1
+          className="mb-6 text-3xl font-bold"
+          id="primite"
+        >
+          Fișiere primite șterse
+        </h1>
         <FileTable
           deleted
           received
@@ -55,7 +60,12 @@ const DeletedFilesPage: NextPage<Props> = ({ serverSession }) => {
           currentPage={currentReceivedPage}
           setCurrentPage={setCurrentReceivedPage}
         />
-        <h1 className="mb-6 mt-24 text-3xl font-bold">Fișiere trimise șterse</h1>
+        <h1
+          className="mb-6 mt-24 text-3xl font-bold"
+          id="trimise"
+        >
+          Fișiere trimise șterse
+        </h1>
         <FileTable
           deleted
           sent

@@ -1,4 +1,4 @@
-import { faSignOut } from '@fortawesome/free-solid-svg-icons';
+import { faCertificate, faSignOut } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import classNames from 'classnames';
 import { Navbar } from 'flowbite-react';
@@ -7,6 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { type FC } from 'react';
+import { api } from '~/utils/api';
 
 const Navigation: FC = () => {
   const session = useSession();
@@ -23,27 +24,31 @@ const Navigation: FC = () => {
 
   const firstPageLinkLabel = session.status === 'unauthenticated' ? 'Autentificare' : 'Partajare';
 
+  const { data: numberOfNewReceivedFiles } = api.file.getNumberOfNewReceivedFiles.useQuery();
+
   return (
     <Navbar
       fluid
       rounded
-      className="fixed w-full"
+      className="fixed w-full list-none"
     >
-      <Link
-        className="flex items-center"
-        href="/"
-      >
-        <Image
-          src="/parsecfis-logo.png"
-          width={42}
-          height={42}
-          alt="Logo ParSecFis"
-        />
-        <h1 className="ml-6 text-center text-3xl font-extrabold text-gray-900 dark:text-slate-50">
-          <span className="bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">ParSecFis</span>
-        </h1>
-      </Link>
-      <Navbar.Toggle />
+      <li>
+        <Link
+          className="flex items-center"
+          href="/"
+        >
+          <Image
+            src="/parsecfis-logo.png"
+            width={42}
+            height={42}
+            alt="Logo ParSecFis"
+          />
+          <h1 className="ml-6 text-center text-3xl font-extrabold text-gray-900 dark:text-slate-50">
+            <span className="bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">ParSecFis</span>
+          </h1>
+        </Link>
+      </li>
+      <Navbar.Toggle type="button" />
       <Navbar.Collapse>
         <Link
           className={linkClassNames}
@@ -53,25 +58,37 @@ const Navigation: FC = () => {
         </Link>
         {session.status === 'authenticated' && (
           <>
-            <Link
-              className={linkClassNames}
-              href="/profil/"
-            >
-              Profil
-            </Link>
-            <Link
-              className={linkClassNames}
-              href="/fisiere/"
-            >
-              Fișiere
-            </Link>
-            <button
-              type="button"
-              onClick={handleLogoutButtonClick}
-              className={classNames(linkClassNames, 'flex items-center gap-2')}
-            >
-              <FontAwesomeIcon icon={faSignOut} /> Deconectare
-            </button>
+            <li>
+              <Link
+                className={linkClassNames}
+                href="/profil/"
+              >
+                Profil
+              </Link>
+            </li>
+            <li>
+              <Link
+                className={classNames(linkClassNames, 'relative')}
+                href="/fisiere/"
+              >
+                {!!numberOfNewReceivedFiles && numberOfNewReceivedFiles > 0 && (
+                  <FontAwesomeIcon
+                    className="text-2 absolute -right-3.5 -top-1 h-3 w-3 rounded-full border-2 border-white font-bold text-purple-500"
+                    icon={faCertificate}
+                  />
+                )}
+                Fișiere
+              </Link>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={handleLogoutButtonClick}
+                className={classNames(linkClassNames, 'flex items-center gap-2')}
+              >
+                <FontAwesomeIcon icon={faSignOut} /> Deconectare
+              </button>
+            </li>
           </>
         )}
       </Navbar.Collapse>

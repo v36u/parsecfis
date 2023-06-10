@@ -197,6 +197,15 @@ const AuthenticatedHomeContent: FC<Props> = ({ session }) => {
     setGeneralError('');
   }, [displaySuccessMessage, resetShareFile]);
 
+  const { data: numberOfNewReceivedFiles } = api.file.getNumberOfNewReceivedFiles.useQuery();
+
+  let newFilesString = `${numberOfNewReceivedFiles as number} fișiere noi`;
+  if (numberOfNewReceivedFiles === 1) {
+    newFilesString = '1 fișier nou';
+  } else if ((numberOfNewReceivedFiles as number) >= 20) {
+    newFilesString = `${numberOfNewReceivedFiles as number} de fișiere noi`;
+  }
+
   return (
     <div className="flex w-11/12 flex-col items-center justify-center md:w-9/12 lg:w-7/12 xl:w-5/12">
       {displaySuccessMessage ? (
@@ -225,6 +234,36 @@ const AuthenticatedHomeContent: FC<Props> = ({ session }) => {
         </>
       ) : (
         <>
+          {!numberOfNewReceivedFiles && (
+            <div
+              id="alert-additional-content-1"
+              className="mb-4 rounded-lg border border-blue-300 bg-blue-50 p-4 text-blue-800 dark:border-blue-800 dark:bg-gray-800 dark:text-blue-400"
+              role="alert"
+            >
+              <div className="flex items-center">
+                <svg
+                  aria-hidden="true"
+                  className="mr-2 h-5 w-5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clip-rule="evenodd"
+                  ></path>
+                </svg>
+                <span className="sr-only">Info</span>
+                <h3 className="text-lg font-medium">Fișiere noi</h3>
+              </div>
+              <div className="mb-4 mt-2 text-sm">
+                Ai primit {newFilesString}. Le poți găsi în tabelul de <Link href="/fisiere/#primite">fișiere primite</Link>. Pentru a îndepărta eticheta de
+                &quot;nou&quot; de pe un fișier, va trebui să îl descarci sau să îl ștergi.
+              </div>
+            </div>
+          )}
+
           <label
             htmlFor="input-group-receiver"
             className="block text-center text-sm font-medium text-gray-900 dark:text-white"

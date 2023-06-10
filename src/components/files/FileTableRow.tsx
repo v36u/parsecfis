@@ -1,4 +1,4 @@
-import { faDownload, faEllipsisH, faTrashCan } from '@fortawesome/free-solid-svg-icons';
+import { faCertificate, faDownload, faEllipsisH, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import classNames from 'classnames';
 import { Tooltip } from 'flowbite-react';
@@ -60,6 +60,13 @@ const FileTableRow: FC<Props> = ({ row, deleted, handleDownload, handleDelete, d
               content="Descărcare"
               animation="duration-500"
             >
+              {row.isNew && (
+                <FontAwesomeIcon
+                  className="text-2 absolute -right-3.5 -top-1 h-3.5 w-3.5 rounded-full border-2 border-white font-bold text-purple-500"
+                  icon={faCertificate}
+                />
+              )}
+
               <FontAwesomeIcon
                 icon={downloadIcon}
                 size="lg"

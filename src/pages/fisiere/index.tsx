@@ -44,7 +44,12 @@ const FilesPage: NextPage<Props> = ({ serverSession }) => {
         <title>Fișiere &mdash; Parsecfis</title>
       </Head>
       <div className="flex w-full flex-col items-center justify-center">
-        <h1 className="mb-6 text-3xl font-bold">Fișiere primite</h1>
+        <h1
+          className="mb-6 text-3xl font-bold"
+          id="primite"
+        >
+          Fișiere primite
+        </h1>
         <FileTable
           received
           session={serverSession}
@@ -54,7 +59,12 @@ const FilesPage: NextPage<Props> = ({ serverSession }) => {
           currentPage={currentReceivedPage}
           setCurrentPage={setCurrentReceivedPage}
         />
-        <h1 className="mb-6 mt-24 text-3xl font-bold">Fișiere trimise</h1>
+        <h1
+          className="mb-6 mt-24 text-3xl font-bold"
+          id="trimise"
+        >
+          Fișiere trimise
+        </h1>
         <FileTable
           sent
           session={serverSession}
