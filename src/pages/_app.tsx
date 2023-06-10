@@ -6,6 +6,7 @@ import 'flowbite';
 import { type Session } from 'next-auth';
 import { SessionProvider } from 'next-auth/react';
 import { type AppType } from 'next/app';
+import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import AppParticles from '~/components/_app/AppParticles';
 import Navigation from '~/components/_app/Navigation';
@@ -13,6 +14,10 @@ import '~/styles/globals.css';
 import { api } from '~/utils/api';
 
 faConfig.autoAddCss = false;
+
+const Toaster = dynamic(() => import('react-hot-toast').then((c) => c.Toaster), {
+  ssr: false,
+});
 
 const MyApp: AppType<{ session: Session | null }> = ({ Component, pageProps: { session, ...pageProps } }) => {
   return (
@@ -32,6 +37,7 @@ const MyApp: AppType<{ session: Session | null }> = ({ Component, pageProps: { s
         <Navigation />
         <main className="align-center flex min-h-screen flex-col justify-center">
           <Component {...pageProps} />
+          <Toaster />
           <Analytics />
         </main>
       </SessionProvider>

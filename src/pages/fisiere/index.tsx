@@ -19,7 +19,7 @@ const FilesPage: NextPage<Props> = ({ serverSession }) => {
   const [currentReceivedPage, setCurrentReceivedPage] = useState(1);
   const {
     data: receivedFilesTablePageData,
-    isLoading: isReceivedFilesTablePageDataLoading,
+    isFetching: isReceivedFilesTablePageDataLoading,
     refetch: refetchCurrentReceivedPage,
   } = api.file.getReceivedFiles.useQuery({
     currentPage: currentReceivedPage,
@@ -30,7 +30,7 @@ const FilesPage: NextPage<Props> = ({ serverSession }) => {
   const [currentSentPage, setCurrentSentPage] = useState(1);
   const {
     data: sentFilesTablePageData,
-    isLoading: isSentFilesTablePageDataLoading,
+    isFetching: isSentFilesTablePageDataLoading,
     refetch: refetchCurrentSentPage,
   } = api.file.getSentFiles.useQuery({
     currentPage: currentSentPage,

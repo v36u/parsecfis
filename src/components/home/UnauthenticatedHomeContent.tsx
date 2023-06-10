@@ -24,15 +24,14 @@ const UnauthenticatedHomeContent: FC = () => {
     }
 
     setError('');
+    setIsLoading(true);
     setDisplayConfirmationModal(true);
   };
-  const handleModalClose = () => {
+  const handleConfirmationModalClose = () => {
     setDisplayConfirmationModal(false);
   };
   const handleISavedButtonClick = async () => {
-    handleModalClose();
-
-    setIsLoading(true);
+    handleConfirmationModalClose();
 
     const response = await signIn('private-key', {
       redirect: false,
@@ -46,7 +45,8 @@ const UnauthenticatedHomeContent: FC = () => {
     }
   };
   const handleIDidNotSaveButtonClick = () => {
-    handleModalClose();
+    handleConfirmationModalClose();
+    setIsLoading(false);
   };
 
   const handleGenerateButtonClick = async () => {
@@ -97,9 +97,17 @@ const UnauthenticatedHomeContent: FC = () => {
           Autentificare
         </span>
       </button>
+      <button
+        type="button"
+        className="inline-flex rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 p-0.5 text-center text-sm font-medium text-slate-50 shadow-lg shadow-purple-500/50 hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-purple-300 dark:shadow-lg dark:shadow-purple-800/80 dark:focus:ring-purple-800"
+        onClick={handleGenerateButtonClick}
+      >
+        <span className="px-5 py-2.5">Generare cheie privată</span>
+      </button>
+
       <Modal
         show={displayConfirmationModal}
-        onClose={handleModalClose}
+        onClose={handleIDidNotSaveButtonClick}
       >
         <Modal.Header>Confirmare autentificare</Modal.Header>
         <Modal.Body>
@@ -118,34 +126,32 @@ const UnauthenticatedHomeContent: FC = () => {
               Aceasta este o măsură de securitate puternică care îți protejează datele, dar care necesită de asemenea și responsabilitate din partea ta pentru
               a-ți asigura accesul la acestea în viitor.
             </p>
-            <p className="text-base leading-relaxed text-gray-500 dark:text-gray-400">
-              Recomandări de stocare:
-              <ol className="list-inside list-decimal space-y-4 text-gray-500 dark:text-gray-400">
-                <li>
-                  <strong>Stocarea offline (Recomandată):</strong> Stocarea offline este cea mai sigură metodă. Există două modalități principale prin care poți
-                  stoca cheia offline:
-                  <ol className="mt-2 list-inside list-disc space-y-1 pl-5">
-                    <li>
-                      <strong>Hârtie:</strong> Poți să-ți scrii manual cheia pe o bucată de hârtie sau să o printezi și apoi să o păstrezi într-un loc sigur,
-                      cum ar fi un seif.
-                    </li>
-                    <li>
-                      <strong>Dispozitiv de stocare offline:</strong> Poți utiliza un dispozitiv de stocare offline, precum un stick USB sau un YubiKey, pe care
-                      îl păstrezi într-un loc sigur.
-                    </li>
-                  </ol>
-                </li>
-                <li>
-                  <strong>Manager de parole:</strong> Există multe aplicații specializate pentru stocarea în siguranță a parolelor și cheilor private. Acestea
-                  folosesc criptare de nivel înalt pentru a-ți proteja informațiile. Unele exemple populare includ LastPass, 1Password și Bitwarden.
-                </li>
-                <li>
-                  <strong>Stocare pe dispozitivul tău:</strong> Poți stoca cheia pe computerul sau telefonul tău, într-un fișier. Totuși, pentru a asigura un
-                  nivel înalt de securitate, îți recomandăm să folosești un fișier criptat. Sistemele de operare moderne oferă metode de criptare a fișierelor.
-                  Asigură-te că ai o parolă puternică pentru acest fișier.
-                </li>
-              </ol>
-            </p>
+            Recomandări de stocare:
+            <ol className="list-inside list-decimal space-y-4 text-gray-500 dark:text-gray-400">
+              <li>
+                <strong>Stocarea offline (Recomandată):</strong> Stocarea offline este cea mai sigură metodă. Există două modalități principale prin care poți
+                stoca cheia offline:
+                <ol className="mt-2 list-inside list-disc space-y-1 pl-5">
+                  <li>
+                    <strong>Hârtie:</strong> Poți să-ți scrii manual cheia pe o bucată de hârtie sau să o printezi și apoi să o păstrezi într-un loc sigur, cum
+                    ar fi un seif.
+                  </li>
+                  <li>
+                    <strong>Dispozitiv de stocare offline:</strong> Poți utiliza un dispozitiv de stocare offline, precum un stick USB sau un YubiKey, pe care
+                    îl păstrezi într-un loc sigur.
+                  </li>
+                </ol>
+              </li>
+              <li>
+                <strong>Manager de parole:</strong> Există multe aplicații specializate pentru stocarea în siguranță a parolelor și cheilor private. Acestea
+                folosesc criptare de nivel înalt pentru a-ți proteja informațiile. Unele exemple populare includ LastPass, 1Password și Bitwarden.
+              </li>
+              <li>
+                <strong>Stocare pe dispozitivul tău:</strong> Poți stoca cheia pe computerul sau telefonul tău, într-un fișier. Totuși, pentru a asigura un
+                nivel înalt de securitate, îți recomandăm să folosești un fișier criptat. Sistemele de operare moderne oferă metode de criptare a fișierelor.
+                Asigură-te că ai o parolă puternică pentru acest fișier.
+              </li>
+            </ol>
           </div>
         </Modal.Body>
         <Modal.Footer>
@@ -154,17 +160,10 @@ const UnauthenticatedHomeContent: FC = () => {
             color="gray"
             onClick={handleIDidNotSaveButtonClick}
           >
-            Încă nu am salvat
+            Nu am salvat încă
           </Button>
         </Modal.Footer>
       </Modal>
-      <button
-        type="button"
-        className="inline-flex rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 p-0.5 text-center text-sm font-medium text-slate-50 shadow-lg shadow-purple-500/50 hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-purple-300 dark:shadow-lg dark:shadow-purple-800/80 dark:focus:ring-purple-800"
-        onClick={handleGenerateButtonClick}
-      >
-        <span className="px-5 py-2.5">Generare cheie privată</span>
-      </button>
     </>
   );
 };

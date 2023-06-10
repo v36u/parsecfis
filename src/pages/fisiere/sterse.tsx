@@ -19,7 +19,7 @@ const DeletedFilesPage: NextPage<Props> = ({ serverSession }) => {
   const [currentReceivedPage, setCurrentReceivedPage] = useState(1);
   const {
     data: receivedFilesTablePageData,
-    isLoading: isReceivedFilesTablePageDataLoading,
+    isFetching: isReceivedFilesTablePageDataLoading,
     refetch: refetchCurrentReceivedPage,
   } = api.file.getReceivedFiles.useQuery({
     currentPage: currentReceivedPage,
@@ -30,7 +30,7 @@ const DeletedFilesPage: NextPage<Props> = ({ serverSession }) => {
   const [currentSentPage, setCurrentSentPage] = useState(1);
   const {
     data: sentFilesTablePageData,
-    isLoading: isSentFilesTablePageDataLoading,
+    isFetching: isSentFilesTablePageDataLoading,
     refetch: refetchCurrentSentPage,
   } = api.file.getSentFiles.useQuery({
     currentPage: currentSentPage,
@@ -74,7 +74,7 @@ const DeletedFilesPage: NextPage<Props> = ({ serverSession }) => {
           href="/fisiere/"
         >
           <span className="px-5 py-2.5">
-            <FontAwesomeIcon icon={faArrowLeft} /> Înapoi la fișierele tale
+            <FontAwesomeIcon icon={faArrowLeft} /> Înapoi la fișierele disponibile
           </span>
         </Link>
       </div>
