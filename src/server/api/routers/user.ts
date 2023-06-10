@@ -18,6 +18,20 @@ export const userRouter = createTRPCRouter({
       });
       return user;
     }),
+  fetchUser: publicProcedure
+    .input(
+      z.object({
+        publicKey: z.string().length(130, 'Cheie publică invalidă.'),
+      }),
+    )
+    .query(async ({ ctx, input: { publicKey } }) => {
+      const user = await ctx.prisma.appUser.findFirst({
+        where: {
+          publicKey,
+        },
+      });
+      return user;
+    }),
   updateUserEmail: publicProcedure
     .input(
       z.object({

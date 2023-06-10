@@ -12,6 +12,7 @@ import { api } from '~/utils/api';
 import { eccCurveName, filesPerPage } from '~/utils/constants';
 import { decrypt } from '~/utils/helpers/encryption';
 import { getFileTablePageRowKey } from '~/utils/helpers/file';
+import { useAppContext } from '../_app/appContext';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import FileTableRow from './FileTableRow';
 
@@ -19,8 +20,8 @@ const ELLIPSIS = '...';
 
 type Props = {
   deleted?: boolean;
-  sent?: boolean;
   received?: boolean;
+  sent?: boolean;
 
   session: Session;
 
@@ -32,7 +33,7 @@ type Props = {
   setCurrentPage: Dispatch<SetStateAction<number>>;
 };
 
-const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { rows, metadata }, isLoading, refetchPageData, currentPage, setCurrentPage }) => {
+const FileTable: FC<Props> = ({ received, sent, deleted, session, pageData: { rows, metadata }, isLoading, refetchPageData, currentPage, setCurrentPage }) => {
   invariant(!(sent && received) && (sent || received), 'Invalid file table parameters.');
 
   const handlePageChange = (page: number) => {
@@ -68,6 +69,8 @@ const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { ro
   const { data: downloadData } = api.file.initiateFileDownload.useQuery(rowBeingDownloaded as FileTablePageRow, {
     enabled: !!rowBeingDownloaded,
   });
+
+  const { refetchNumberOfNewReceivedFiles } = useAppContext();
 
   const handleDownloadButtonClick = (row: FileTablePageRow) => {
     setRowBeingDownloaded(row);
@@ -127,10 +130,12 @@ const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { ro
       });
 
     setRowBeingDownloaded(null);
-  }, [downloadData, rowBeingDownloaded, session.user.privateKey]);
+    refetchPageData();
+    refetchNumberOfNewReceivedFiles();
+  }, [downloadData, refetchNumberOfNewReceivedFiles, refetchPageData, rowBeingDownloaded, session.user.privateKey]);
 
   const [rowBeingDeleted, setRowBeingDeleted] = useState<FileTablePageRow | null>(null);
-  const { mutate: deleteFile, isSuccess: isDeleteFileSuccess } = api.file.deleteFile.useMutation();
+  const { mutate: deleteFile, isSuccess: isDeleteFileSuccess, reset: resetDeleteFile } = api.file.deleteFile.useMutation();
   const handleDeletionModalClose = () => {
     setRowBeingDeleted(null);
   };
@@ -147,34 +152,38 @@ const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { ro
     handleDeletionModalClose();
   };
   useEffect(() => {
-    if (isDeleteFileSuccess) {
-      refetchPageData();
-      if (rowBeingDeleted) {
-        toast(
-          (t) => (
-            <div className="flex">
-              <p>
-                Fișierul &quot;<em>{rowBeingDeleted.fileName}</em>&quot; a fost <strong>șters</strong> cu succes.
-              </p>
-              <button onClick={() => toast.dismiss(t.id)}>
-                <FontAwesomeIcon icon={faClose} />
-              </button>
-            </div>
-          ),
-          {
-            duration: 5e3,
-            icon: <FontAwesomeIcon icon={faTrashCan} />,
-            position: 'top-center',
-            style: {
-              background: 'rgb(249 200 200)',
-              color: 'rgb(155 28 28)',
-            },
-          },
-        );
-      }
-      setRowBeingDeleted(null);
+    if (!isDeleteFileSuccess) {
+      return;
     }
-  }, [isDeleteFileSuccess, refetchPageData, rowBeingDeleted]);
+    refetchPageData();
+    refetchNumberOfNewReceivedFiles();
+
+    if (rowBeingDeleted) {
+      toast(
+        (t) => (
+          <div className="flex">
+            <p>
+              Fișierul &quot;<em>{rowBeingDeleted.fileName}</em>&quot; a fost <strong>șters</strong> cu succes.
+            </p>
+            <button onClick={() => toast.dismiss(t.id)}>
+              <FontAwesomeIcon icon={faClose} />
+            </button>
+          </div>
+        ),
+        {
+          duration: 5e3,
+          icon: <FontAwesomeIcon icon={faTrashCan} />,
+          position: 'top-center',
+          style: {
+            background: 'rgb(249 200 200)',
+            color: 'rgb(155 28 28)',
+          },
+        },
+      );
+    }
+    resetDeleteFile();
+    setRowBeingDeleted(null);
+  }, [isDeleteFileSuccess, refetchNumberOfNewReceivedFiles, refetchPageData, resetDeleteFile, rowBeingDeleted]);
 
   return (
     <>
@@ -207,12 +216,20 @@ const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { ro
                 Data partajării
               </th>
               {deleted && (
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-center"
-                >
-                  Data ștergerii
-                </th>
+                <>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-center"
+                  >
+                    Data ștergerii
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-center"
+                  >
+                    Motivul ștergerii
+                  </th>
+                </>
               )}
               {!deleted && (
                 <th
@@ -229,7 +246,7 @@ const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { ro
               <tr className="border-y bg-slate-50 bg-opacity-95 hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-600">
                 <td
                   className="py-4 text-center"
-                  colSpan={4}
+                  colSpan={deleted ? 5 : 4}
                 >
                   {sent && (deleted ? 'Nu există fișiere trimise șterse.' : 'Nu există fișiere trimise disponibile.')}
                   {received && (deleted ? 'Nu există fișiere primite șterse.' : 'Nu există fișiere primite disponibile.')}
@@ -243,6 +260,8 @@ const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { ro
                 <FileTableRow
                   key={rowKey}
                   deleted={deleted}
+                  sent={sent}
+                  received={received}
                   row={row}
                   handleDownload={handleDownloadButtonClick}
                   handleDelete={handleDeleteButtonClick}
@@ -367,10 +386,10 @@ const FileTable: FC<Props> = ({ sent, received, deleted, session, pageData: { ro
         show={!!rowBeingDeleted}
         onClose={handleDeletionModalClose}
       >
-        <Modal.Header>Confirmare autentificare</Modal.Header>
+        <Modal.Header>Confirmare ștergere fișier</Modal.Header>
         <Modal.Body>
           <div className="space-y-6">
-            Confirmi că vrei să <strong>ștergi</strong> fișierul &quot;<em>{rowBeingDeleted?.fileName}</em>&quot;?
+            Confirmi că dorești să <strong>ștergi</strong> fișierul &quot;<em>{rowBeingDeleted?.fileName}</em>&quot;?
           </div>
         </Modal.Body>
         <Modal.Footer>

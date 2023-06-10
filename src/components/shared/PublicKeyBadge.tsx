@@ -34,7 +34,7 @@ const PublicKeyBadge: FC<Props> = ({ publicKey, displayCopyButton, displayProfil
   }, [actualPublicKey]);
 
   return (
-    <div className="inline-flex ">
+    <div className="inline-flex items-center justify-center">
       <span className="py-gap-0.5.5 mr-2 rounded border border-purple-400 bg-purple-100 px-2.5 text-xs font-medium italic text-purple-800 dark:bg-gray-700 dark:text-purple-400">
         {shortenedPublicKey}
       </span>

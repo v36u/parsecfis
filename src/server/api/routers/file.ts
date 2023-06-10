@@ -1,6 +1,7 @@
 import { DeleteObjectCommand, GetObjectCommand, S3 } from '@aws-sdk/client-s3';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { DeletionReason } from '@prisma/client';
 import { TRPCError } from '@trpc/server';
 import { createECDH } from 'crypto';
 import { z } from 'zod';
@@ -73,6 +74,7 @@ export const fileRouter = createTRPCRouter({
           s3Key,
           sharedAt,
           deletedAt,
+          deletionReason,
           downloadedByReceiverAt,
         } = sentFile;
 
@@ -83,15 +85,15 @@ export const fileRouter = createTRPCRouter({
 
         const { decryptedBuffer: decryptedFileNameBuffer, iv } = decrypt(s3Key, symmetricKey);
 
-        const fileTablePageRow: FileTablePageRow = {
+        let fileTablePageRow: FileTablePageRow = {
           otherParticipantPublicKey: senderPublicKey,
           fileName: decryptedFileNameBuffer.toString('utf-8'),
           sharedAt: getHumanReadableDate(sharedAt),
-          isNew: !!downloadedByReceiverAt,
           iv: iv.toString('hex'),
+          isNew: !downloadedByReceiverAt,
         };
-        if (deletedAt) {
-          fileTablePageRow.deletedAt = getHumanReadableDate(deletedAt);
+        if (deletedAt && deletionReason) {
+          fileTablePageRow = { ...fileTablePageRow, deletedAt: getHumanReadableDate(deletedAt), deletionReason };
         }
 
         return fileTablePageRow;
@@ -164,7 +166,7 @@ export const fileRouter = createTRPCRouter({
           s3Key,
           sharedAt,
           deletedAt,
-          downloadedByReceiverAt,
+          deletionReason,
         } = sentFile;
 
         const senderEcdh = createECDH(eccCurveName);
@@ -174,15 +176,14 @@ export const fileRouter = createTRPCRouter({
 
         const { decryptedBuffer: decryptedFileNameBuffer, iv } = decrypt(s3Key, symmetricKey);
 
-        const fileTablePageRow: FileTablePageRow = {
+        let fileTablePageRow: FileTablePageRow = {
           otherParticipantPublicKey: receiverPublicKey,
           fileName: decryptedFileNameBuffer.toString('utf-8'),
           sharedAt: getHumanReadableDate(sharedAt),
-          isNew: !!downloadedByReceiverAt,
           iv: iv.toString('hex'),
         };
-        if (deletedAt) {
-          fileTablePageRow.deletedAt = getHumanReadableDate(deletedAt);
+        if (deletedAt && deletionReason) {
+          fileTablePageRow = { ...fileTablePageRow, deletedAt: getHumanReadableDate(deletedAt), deletionReason };
         }
 
         return fileTablePageRow;
@@ -372,12 +373,25 @@ export const fileRouter = createTRPCRouter({
 
       await s3.send(deleteCommand);
 
+      const otherReceiver = await ctx.prisma.appFile.findFirst({
+        where: {
+          s3Key,
+          receiver: {
+            publicKey: otherParticipantPublicKey,
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
       await ctx.prisma.appFile.update({
         where: {
           s3Key,
         },
         data: {
           deletedAt: new Date(),
+          deletionReason: otherReceiver ? DeletionReason.DeletedBySender : DeletionReason.DeletedByReceiver,
         },
       });
     }),
@@ -390,6 +404,9 @@ export const fileRouter = createTRPCRouter({
           publicKey,
         },
         downloadedByReceiverAt: {
+          equals: null,
+        },
+        deletedAt: {
           equals: null,
         },
       },

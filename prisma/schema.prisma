@@ -19,16 +19,22 @@ model AppUser {
 }
 
 model AppFile {
-    id                     Int       @id @default(autoincrement())
+    id                     Int             @id @default(autoincrement())
     senderId               Int
     receiverId             Int
-    s3Key                  String    @unique
-    sharedAt               DateTime  @default(now())
+    s3Key                  String          @unique
+    sharedAt               DateTime        @default(now())
     deletedAt              DateTime?
+    deletionReason         DeletionReason?
     downloadedByReceiverAt DateTime?
-    sender                 AppUser   @relation(name: "sender", fields: [senderId], references: [id])
-    receiver               AppUser   @relation(name: "receiver", fields: [receiverId], references: [id])
+    sender                 AppUser         @relation(name: "sender", fields: [senderId], references: [id])
+    receiver               AppUser         @relation(name: "receiver", fields: [receiverId], references: [id])
 
     @@index([senderId])
     @@index([receiverId])
+}
+
+enum DeletionReason {
+    DeletedBySender
+    DeletedByReceiver
 }

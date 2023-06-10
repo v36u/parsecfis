@@ -1,14 +1,18 @@
 import { faCertificate, faDownload, faEllipsisH, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { DeletionReason } from '@prisma/client';
 import classNames from 'classnames';
 import { Tooltip } from 'flowbite-react';
 import { useEffect, useState, type FC } from 'react';
+import invariant from 'tiny-invariant';
 import { type FileTablePageRow } from '~/utils/@types/FileTablePageData';
 import PublicKeyBadge from '../shared/PublicKeyBadge';
 
 type Props = {
   row: FileTablePageRow;
   deleted?: boolean;
+  received?: boolean;
+  sent?: boolean;
   handleDownload: (row: FileTablePageRow) => void;
   handleDelete: (row: FileTablePageRow) => void;
   downloadIsLoading: boolean;
@@ -18,7 +22,9 @@ type Props = {
 const initialDownloadIcon = faDownload;
 const initialDeleteIcon = faTrashCan;
 
-const FileTableRow: FC<Props> = ({ row, deleted, handleDownload, handleDelete, downloadIsLoading, deleteIsLoading }) => {
+const FileTableRow: FC<Props> = ({ row, received, sent, deleted, handleDownload, handleDelete, downloadIsLoading, deleteIsLoading }) => {
+  invariant(!(sent && received) && (sent || received), 'Invalid file table parameters.');
+
   const [downloadIcon, setDownloadIcon] = useState(initialDownloadIcon);
   const [deleteIcon, setDeleteIcon] = useState(initialDeleteIcon);
 
@@ -48,7 +54,15 @@ const FileTableRow: FC<Props> = ({ row, deleted, handleDownload, handleDelete, d
         />
       </td>
       <td className="py-4 text-center">{row.sharedAt}</td>
-      {deleted && <td className="py-4 text-center">{row.deletedAt}</td>}
+      {deleted && (
+        <>
+          <td className="py-4 text-center">{row.deletedAt}</td>
+          <td className="py-4 text-center">
+            {received && (row.deletionReason === DeletionReason.DeletedByReceiver ? 'Șters de către tine' : 'Șters de către emițător')}
+            {sent && (row.deletionReason === DeletionReason.DeletedBySender ? 'Șters de către tine' : 'Șters de către receptor')}
+          </td>
+        </>
+      )}
       {!deleted && (
         <td className="flex items-center justify-center gap-6 py-4">
           <button

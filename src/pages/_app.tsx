@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import AppParticles from '~/components/_app/AppParticles';
 import Navigation from '~/components/_app/Navigation';
+import { AppContextProvider } from '~/components/_app/appContext';
 import '~/styles/globals.css';
 import { api } from '~/utils/api';
 
@@ -34,12 +35,14 @@ const MyApp: AppType<{ session: Session | null }> = ({ Component, pageProps: { s
       </Head>
       <AppParticles />
       <SessionProvider session={session}>
-        <Navigation />
-        <main className="align-center flex min-h-screen flex-col justify-center">
-          <Component {...pageProps} />
-          <Toaster />
-          <Analytics />
-        </main>
+        <AppContextProvider>
+          <Navigation />
+          <main className="align-center flex min-h-screen flex-col justify-center">
+            <Component {...pageProps} />
+            <Toaster />
+            <Analytics />
+          </main>
+        </AppContextProvider>
       </SessionProvider>
     </>
   );

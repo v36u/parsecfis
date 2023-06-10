@@ -7,9 +7,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { type FC } from 'react';
-import { api } from '~/utils/api';
+import { useAppContext } from './appContext';
 
 const Navigation: FC = () => {
+  const { numberOfNewReceivedFiles } = useAppContext();
   const session = useSession();
   const { push } = useRouter();
   const handleLogoutButtonClick = async () => {
@@ -20,17 +21,15 @@ const Navigation: FC = () => {
   };
 
   const linkClassNames =
-    'block py-2 pr-4 pl-3 md:p-0 border-b border-gray-100  text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white md:border-0 md:hover:bg-transparent md:hover:text-blue-700 md:dark:hover:bg-transparent md:dark:hover:text-white';
+    'w-fit block py-2 pr-4 pl-3 md:p-0 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white md:border-0 md:hover:bg-transparent md:hover:text-blue-700 md:dark:hover:bg-transparent md:dark:hover:text-white';
 
   const firstPageLinkLabel = session.status === 'unauthenticated' ? 'Autentificare' : 'Partajare';
-
-  const { data: numberOfNewReceivedFiles } = api.file.getNumberOfNewReceivedFiles.useQuery();
 
   return (
     <Navbar
       fluid
       rounded
-      className="fixed w-full list-none"
+      className="fixed z-50 w-full list-none"
     >
       <li>
         <Link
@@ -50,15 +49,17 @@ const Navigation: FC = () => {
       </li>
       <Navbar.Toggle type="button" />
       <Navbar.Collapse>
-        <Link
-          className={linkClassNames}
-          href="/"
-        >
-          {firstPageLinkLabel}
-        </Link>
+        <li className="border-b border-gray-100 md:border-none">
+          <Link
+            className={linkClassNames}
+            href="/"
+          >
+            {firstPageLinkLabel}
+          </Link>
+        </li>
         {session.status === 'authenticated' && (
           <>
-            <li>
+            <li className="border-b border-gray-100 md:border-none">
               <Link
                 className={linkClassNames}
                 href="/profil/"
@@ -66,21 +67,21 @@ const Navigation: FC = () => {
                 Profil
               </Link>
             </li>
-            <li>
+            <li className="border-b border-gray-100 md:border-none">
               <Link
                 className={classNames(linkClassNames, 'relative')}
                 href="/fisiere/"
               >
                 {!!numberOfNewReceivedFiles && numberOfNewReceivedFiles > 0 && (
                   <FontAwesomeIcon
-                    className="text-2 absolute -right-3.5 -top-1 h-3 w-3 rounded-full border-2 border-white font-bold text-purple-500"
+                    className="text-2 absolute -right-0 h-3 w-3 rounded-full border-2 border-white font-bold text-purple-500 md:-right-3.5 md:-top-1"
                     icon={faCertificate}
                   />
                 )}
                 Fișiere
               </Link>
             </li>
-            <li>
+            <li className="border-b border-gray-100 md:border-none">
               <button
                 type="button"
                 onClick={handleLogoutButtonClick}

@@ -13,6 +13,7 @@ const config = {
       rules: {
         '@typescript-eslint/no-misused-promises': 'off',
         eqeqeq: ['error', 'always'],
+        '@typescript-eslint/no-empty-function': 'off',
       },
     },
   ],

@@ -1,10 +1,13 @@
+import { type DeletionReason } from '@prisma/client';
+
 export type FileTablePageRow = {
   otherParticipantPublicKey: string;
   fileName: string;
   sharedAt: string;
-  deletedAt?: string;
   iv: string;
-  isNew: boolean;
+  isNew?: boolean;
+  deletedAt?: string;
+  deletionReason?: DeletionReason;
 };
 
 export type FileTablePageMetadata = {
