@@ -5,7 +5,7 @@ type Props = {
   value: string;
 };
 
-const ProfileData: FC<Props> = ({ label, value }) => {
+const ProfileInputReadOnly: FC<Props> = ({ label, value }) => {
   return (
     <div className="z-10 mb-6">
       <span className="mb-2 block text-sm font-medium text-gray-900">{label}:</span>
@@ -14,4 +14,4 @@ const ProfileData: FC<Props> = ({ label, value }) => {
   );
 };
 
-export default ProfileData;
+export default ProfileInputReadOnly;

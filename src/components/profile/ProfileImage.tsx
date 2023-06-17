@@ -166,7 +166,7 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, isProfilePageLoad
   const isLoading = !isProfilePageLoading && (isUploadProfileImageLoading || isUploadLoading || isDeleteProfileImageLoading);
 
   return (
-    <div className="mb-3 mt-6 flex flex-col items-center justify-center">
+    <div className=" mt-3 flex flex-col items-center justify-center">
       <label
         htmlFor="dropzone-profile-image"
         className={classNames('mx-autoflex relative mb-2 h-48 w-48 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-full', {

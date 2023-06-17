@@ -5,9 +5,10 @@ import type { GetServerSideProps, NextPage } from 'next';
 import { getServerSession } from 'next-auth';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
-import ProfileData from '~/components/profile/ProfileData';
 import ProfileImage from '~/components/profile/ProfileImage';
+import ProfileImageReadOnly from '~/components/profile/ProfileImageReadOnly';
 import ProfileInput from '~/components/profile/ProfileInput';
+import ProfileInputReadOnly from '~/components/profile/ProfileInputReadOnly';
 import LoadingSpinner from '~/components/shared/LoadingSpinner';
 import PublicKeyBadge from '~/components/shared/PublicKeyBadge';
 import { nextAuthOptions } from '~/server/auth';
@@ -26,11 +27,7 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
     {
       publicKey,
     },
-    {
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
-    },
+    { refetchOnMount: false, refetchOnReconnect: false, refetchOnWindowFocus: false },
   );
   const nameMutation = api.user.updateName.useMutation() as UseMutationResult;
   const emailMutation = api.user.updateEmail.useMutation() as UseMutationResult;
@@ -39,11 +36,7 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
     {
       publicKey,
     },
-    {
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
-    },
+    { refetchOnMount: false, refetchOnReconnect: false, refetchOnWindowFocus: false },
   );
   const [initialProfileImageDataUrl, setInitialProfileImageDataUrl] = useState<string | null>(null);
   const [isInitialProfileImageDownloading, setIsInitialProfileImageDownloading] = useState(false);
@@ -54,6 +47,7 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
 
     const { signedGetUrl } = initialProfileImageData;
     if (!signedGetUrl) {
+      setInitialProfileImageDataUrl(null);
       return;
     }
 
@@ -104,17 +98,23 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
             })}
           >
             {isLoading && <LoadingSpinner />}
-            <ProfileImage
-              initialProfileImageDataUrl={initialProfileImageDataUrl}
-              isProfilePageLoading={isLoading}
-            />
+            {isReadOnly ? (
+              <ProfileImageReadOnly
+                initialProfileImageDataUrl={initialProfileImageDataUrl}
+                isProfilePageLoading={isLoading}
+              />
+            ) : (
+              <ProfileImage
+                initialProfileImageDataUrl={initialProfileImageDataUrl}
+                isProfilePageLoading={isLoading}
+              />
+            )}
             {isReadOnly && userData?.name && (
-              <ProfileData
+              <ProfileInputReadOnly
                 label="Nume"
                 value={userData.name}
               />
             )}
-
             {!isReadOnly && (
               <ProfileInput
                 mutation={nameMutation}
@@ -126,7 +126,7 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
               />
             )}
             {isReadOnly && userData?.email && (
-              <ProfileData
+              <ProfileInputReadOnly
                 label="Email"
                 value={userData.email}
               />

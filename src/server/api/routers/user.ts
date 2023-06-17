@@ -129,8 +129,7 @@ export const userRouter = createTRPCRouter({
         publicKey: z.string().length(eccCurvePublicKeyLength, 'Cheie publică invalidă.'),
       }),
     )
-    .query(async ({ ctx: { session } }) => {
-      const { publicKey } = getUserKeysWithGuard(session);
+    .query(async ({ input: { publicKey } }) => {
       const s3Key = getProfileImageS3Key(publicKey);
 
       const s3 = new S3({});
