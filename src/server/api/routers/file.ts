@@ -7,14 +7,14 @@ import { createECDH } from 'crypto';
 import { z } from 'zod';
 import { env } from '~/env.mjs';
 import { type FileTablePageData, type FileTablePageMetadata, type FileTablePageRow } from '~/utils/@types/FileTablePageData';
-import { eccCurveName, maxFileSizeInBytes } from '~/utils/constants';
+import { defaultAwsExpirationSeconds, eccCurveName, eccCurvePublicKeyLength, maxFileSizeInBytes } from '~/utils/constants';
 import { getUserKeysWithGuard } from '~/utils/helpers/auth';
 import { decrypt, encrypt } from '~/utils/helpers/encryption';
 import { getHumanReadableDate } from '~/utils/helpers/shared';
-import { createTRPCRouter, publicProcedure } from '../trpc';
+import { authenticatedProcedure, createTRPCRouter } from '../trpc';
 
 export const fileRouter = createTRPCRouter({
-  getReceivedFiles: publicProcedure
+  getReceivedFiles: authenticatedProcedure
     .input(
       z.object({
         currentPage: z.number(),
@@ -22,10 +22,10 @@ export const fileRouter = createTRPCRouter({
         deleted: z.boolean(),
       }),
     )
-    .query(async ({ ctx, input: { filesPerPage, currentPage, deleted } }) => {
-      const { publicKey: receiverPublicKey, privateKey: receiverPrivateKey } = getUserKeysWithGuard(ctx.session);
+    .query(async ({ ctx: { prisma, session }, input: { filesPerPage, currentPage, deleted } }) => {
+      const { publicKey: receiverPublicKey, privateKey: receiverPrivateKey } = getUserKeysWithGuard(session);
 
-      const totalFiles = await ctx.prisma.appFile.count({
+      const totalFiles = await prisma.appFile.count({
         where: {
           deletedAt: deleted
             ? {
@@ -45,7 +45,7 @@ export const fileRouter = createTRPCRouter({
         totalPages: Math.ceil(totalFiles / filesPerPage),
       };
 
-      const currentPageFiles = await ctx.prisma.appFile.findMany({
+      const currentPageFiles = await prisma.appFile.findMany({
         where: {
           deletedAt: deleted
             ? {
@@ -106,7 +106,7 @@ export const fileRouter = createTRPCRouter({
 
       return filesPage;
     }),
-  getSentFiles: publicProcedure
+  getSentFiles: authenticatedProcedure
     .input(
       z.object({
         currentPage: z.number(),
@@ -114,10 +114,10 @@ export const fileRouter = createTRPCRouter({
         deleted: z.boolean(),
       }),
     )
-    .query(async ({ ctx, input: { filesPerPage, currentPage, deleted } }) => {
-      const { publicKey: senderPublicKey, privateKey: senderPrivateKey } = getUserKeysWithGuard(ctx.session);
+    .query(async ({ ctx: { prisma, session }, input: { filesPerPage, currentPage, deleted } }) => {
+      const { publicKey: senderPublicKey, privateKey: senderPrivateKey } = getUserKeysWithGuard(session);
 
-      const totalFiles = await ctx.prisma.appFile.count({
+      const totalFiles = await prisma.appFile.count({
         where: {
           deletedAt: deleted
             ? {
@@ -137,7 +137,7 @@ export const fileRouter = createTRPCRouter({
         totalPages: Math.ceil(totalFiles / filesPerPage),
       };
 
-      const currentPageFiles = await ctx.prisma.appFile.findMany({
+      const currentPageFiles = await prisma.appFile.findMany({
         where: {
           deletedAt: deleted
             ? {
@@ -196,22 +196,22 @@ export const fileRouter = createTRPCRouter({
 
       return filesPage;
     }),
-  shareFile: publicProcedure
+  shareFile: authenticatedProcedure
     .input(
       z.object({
         receiverIdentifier: z
           .string()
-          .length(130, 'Acest identificator este invalid.')
+          .length(eccCurvePublicKeyLength, 'Acest identificator este invalid.')
           .startsWith('04', 'Acest identificator este invalid.')
           .or(z.string().email('Acest identificator este invalid.')),
         fileName: z.string(),
         fileType: z.string(),
       }),
     )
-    .mutation(async ({ ctx, input: { receiverIdentifier, fileName, fileType } }) => {
-      const { privateKey: senderPrivateKey, publicKey: senderPublicKey } = getUserKeysWithGuard(ctx.session);
+    .mutation(async ({ ctx: { prisma, session }, input: { receiverIdentifier, fileName, fileType } }) => {
+      const { privateKey: senderPrivateKey, publicKey: senderPublicKey } = getUserKeysWithGuard(session);
 
-      const receiver = await ctx.prisma.appUser.findFirst({
+      const receiver = await prisma.appUser.findFirst({
         where: {
           OR: [
             {
@@ -254,7 +254,7 @@ export const fileRouter = createTRPCRouter({
         Fields: {
           'Content-Type': fileType,
         },
-        Expires: 5, // secunde
+        Expires: defaultAwsExpirationSeconds,
         Conditions: [['content-length-range', 0, maxFileSizeInBytes]],
       });
 
@@ -266,7 +266,7 @@ export const fileRouter = createTRPCRouter({
         });
       }
 
-      const sender = await ctx.prisma.appUser.findFirst({
+      const sender = await prisma.appUser.findFirst({
         where: {
           publicKey: senderPublicKey,
         },
@@ -281,7 +281,7 @@ export const fileRouter = createTRPCRouter({
         });
       }
 
-      await ctx.prisma.appFile.create({
+      await prisma.appFile.create({
         data: {
           senderId: sender.id,
           receiverId: receiver.id,
@@ -294,7 +294,7 @@ export const fileRouter = createTRPCRouter({
         presignedPost,
       };
     }),
-  initiateFileDownload: publicProcedure
+  initiateFileDownload: authenticatedProcedure
     .input(
       z.object({
         otherParticipantPublicKey: z.string(),
@@ -302,8 +302,8 @@ export const fileRouter = createTRPCRouter({
         iv: z.string(),
       }),
     )
-    .query(async ({ ctx, input: { otherParticipantPublicKey, fileName, iv } }) => {
-      const { privateKey } = getUserKeysWithGuard(ctx.session);
+    .query(async ({ ctx: { prisma, session }, input: { otherParticipantPublicKey, fileName, iv } }) => {
+      const { privateKey } = getUserKeysWithGuard(session);
 
       const ecdh = createECDH(eccCurveName);
       ecdh.setPrivateKey(Buffer.from(privateKey, 'hex'));
@@ -317,10 +317,10 @@ export const fileRouter = createTRPCRouter({
         Key: s3Key,
       });
       const signedGetUrl = await getSignedUrl(s3, getCommand, {
-        expiresIn: 5, // secunde
+        expiresIn: defaultAwsExpirationSeconds,
       });
 
-      const fileReceived = await ctx.prisma.appFile.findFirst({
+      const fileReceived = await prisma.appFile.findFirst({
         where: {
           s3Key,
           receiver: {
@@ -334,7 +334,7 @@ export const fileRouter = createTRPCRouter({
         },
       });
       if (fileReceived) {
-        await ctx.prisma.appFile.update({
+        await prisma.appFile.update({
           where: {
             id: fileReceived.id,
           },
@@ -348,7 +348,7 @@ export const fileRouter = createTRPCRouter({
         signedGetUrl,
       };
     }),
-  deleteFile: publicProcedure
+  deleteFile: authenticatedProcedure
     .input(
       z.object({
         otherParticipantPublicKey: z.string(),
@@ -356,8 +356,8 @@ export const fileRouter = createTRPCRouter({
         iv: z.string(),
       }),
     )
-    .mutation(async ({ ctx, input: { otherParticipantPublicKey, fileName, iv } }) => {
-      const { privateKey } = getUserKeysWithGuard(ctx.session);
+    .mutation(async ({ ctx: { prisma, session }, input: { otherParticipantPublicKey, fileName, iv } }) => {
+      const { privateKey } = getUserKeysWithGuard(session);
 
       const ecdh = createECDH(eccCurveName);
       ecdh.setPrivateKey(Buffer.from(privateKey, 'hex'));
@@ -373,7 +373,7 @@ export const fileRouter = createTRPCRouter({
 
       await s3.send(deleteCommand);
 
-      const otherReceiver = await ctx.prisma.appFile.findFirst({
+      const otherReceiver = await prisma.appFile.findFirst({
         where: {
           s3Key,
           receiver: {
@@ -385,7 +385,7 @@ export const fileRouter = createTRPCRouter({
         },
       });
 
-      await ctx.prisma.appFile.update({
+      await prisma.appFile.update({
         where: {
           s3Key,
         },
@@ -395,10 +395,10 @@ export const fileRouter = createTRPCRouter({
         },
       });
     }),
-  getNumberOfNewReceivedFiles: publicProcedure.query(async ({ ctx }) => {
-    const { publicKey } = getUserKeysWithGuard(ctx.session);
+  getNumberOfNewReceivedFiles: authenticatedProcedure.query(async ({ ctx: { prisma, session } }) => {
+    const { publicKey } = getUserKeysWithGuard(session);
 
-    const numberOfNewReceivedFiles = await ctx.prisma.appFile.count({
+    const numberOfNewReceivedFiles = await prisma.appFile.count({
       where: {
         receiver: {
           publicKey,

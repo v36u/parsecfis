@@ -4,9 +4,10 @@ import classNames from 'classnames';
 import type { GetServerSideProps, NextPage } from 'next';
 import { getServerSession } from 'next-auth';
 import Head from 'next/head';
+import { useEffect, useState } from 'react';
 import ProfileData from '~/components/profile/ProfileData';
+import ProfileImage from '~/components/profile/ProfileImage';
 import ProfileInput from '~/components/profile/ProfileInput';
-import ProfilePicture from '~/components/profile/ProfilePicture';
 import LoadingSpinner from '~/components/shared/LoadingSpinner';
 import PublicKeyBadge from '~/components/shared/PublicKeyBadge';
 import { nextAuthOptions } from '~/server/auth';
@@ -19,7 +20,9 @@ type Props = {
 };
 
 export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
-  const { data, isLoading } = api.user.fetchUserWithGuard.useQuery(
+  const textProfil = isReadOnly ? 'Profil' : 'Profilul tău';
+
+  const { data: userData, isLoading: isUserDataLoading } = api.user.fetchUserWithGuard.useQuery(
     {
       publicKey,
     },
@@ -29,16 +32,60 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
       refetchOnWindowFocus: false,
     },
   );
+  const nameMutation = api.user.updateName.useMutation() as UseMutationResult;
+  const emailMutation = api.user.updateEmail.useMutation() as UseMutationResult;
 
-  const nameMutation = api.user.updateUserName.useMutation() as UseMutationResult;
-  const emailMutation = api.user.updateUserEmail.useMutation() as UseMutationResult;
+  const { data: initialProfileImageData, isLoading: isInitialProfileImageDataLoading } = api.user.initiateProfileImageDownload.useQuery(
+    {
+      publicKey,
+    },
+    {
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+    },
+  );
+  const [initialProfileImageDataUrl, setInitialProfileImageDataUrl] = useState<string | null>(null);
+  const [isInitialProfileImageDownloading, setIsInitialProfileImageDownloading] = useState(false);
+  useEffect(() => {
+    if (!initialProfileImageData) {
+      return;
+    }
 
-  const textProfil = isReadOnly ? 'Profil' : 'Profilul tău';
+    const { signedGetUrl } = initialProfileImageData;
+    if (!signedGetUrl) {
+      return;
+    }
+
+    setIsInitialProfileImageDownloading(true);
+    fetch(signedGetUrl)
+      .then((response) => response.blob())
+      .then((blob) => {
+        const dataUrlReader = new FileReader();
+        dataUrlReader.onloadend = (event) => {
+          const result = event.target?.result;
+          if (!result) {
+            return;
+          }
+
+          setInitialProfileImageDataUrl(result.toString());
+        };
+        dataUrlReader.readAsDataURL(blob);
+      })
+      .catch((error) => {
+        console.error(error);
+      })
+      .finally(() => {
+        setIsInitialProfileImageDownloading(false);
+      });
+  }, [initialProfileImageData]);
+
+  const isLoading = isUserDataLoading || isInitialProfileImageDataLoading || isInitialProfileImageDownloading;
 
   return (
     <>
       <Head>
-        <title>{textProfil} &mdash; Parsecfis</title>
+        <title>Profil &mdash; Parsecfis</title>
       </Head>
 
       <div className="flex flex-col items-center justify-center">
@@ -57,11 +104,14 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
             })}
           >
             {isLoading && <LoadingSpinner />}
-            <ProfilePicture />
-            {isReadOnly && data?.name && (
+            <ProfileImage
+              initialProfileImageDataUrl={initialProfileImageDataUrl}
+              isProfilePageLoading={isLoading}
+            />
+            {isReadOnly && userData?.name && (
               <ProfileData
                 label="Nume"
-                value={data.name}
+                value={userData.name}
               />
             )}
 
@@ -71,14 +121,14 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
                 field="name"
                 label="Nume"
                 placeholder="Ex: Ion Popescu"
-                defaultValue={data?.name ?? ''}
+                defaultValue={userData?.name ?? ''}
                 icon={faUser}
               />
             )}
-            {isReadOnly && data?.email && (
+            {isReadOnly && userData?.email && (
               <ProfileData
                 label="Email"
-                value={data.email}
+                value={userData.email}
               />
             )}
             {!isReadOnly && (
@@ -87,7 +137,7 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
                 field="email"
                 label="Email"
                 placeholder="Ex: ion.popescu@email.com"
-                defaultValue={data?.email ?? ''}
+                defaultValue={userData?.email ?? ''}
                 icon={faEnvelope}
               />
             )}

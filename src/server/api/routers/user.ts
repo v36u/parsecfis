@@ -1,17 +1,23 @@
+import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, S3 } from '@aws-sdk/client-s3';
+import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import { env } from '~/env.mjs';
+import { defaultAwsExpirationSeconds, eccCurvePublicKeyLength, maxProfileImageSizeInBytes } from '~/utils/constants';
 import { getUserKeysWithGuard } from '~/utils/helpers/auth';
-import { createTRPCRouter, publicProcedure } from '../trpc';
+import { getProfileImageS3Key } from '~/utils/helpers/user';
+import { authenticatedProcedure, createTRPCRouter, publicProcedure } from '../trpc';
 
 export const userRouter = createTRPCRouter({
   fetchUserWithGuard: publicProcedure
     .input(
       z.object({
-        publicKey: z.string().length(130, 'Cheie publică invalidă.'),
+        publicKey: z.string().length(eccCurvePublicKeyLength, 'Cheie publică invalidă.'),
       }),
     )
-    .query(async ({ ctx, input: { publicKey } }) => {
-      const user = await ctx.prisma.appUser.findUniqueOrThrow({
+    .query(async ({ ctx: { prisma }, input: { publicKey } }) => {
+      const user = await prisma.appUser.findUniqueOrThrow({
         where: {
           publicKey,
         },
@@ -21,25 +27,25 @@ export const userRouter = createTRPCRouter({
   fetchUser: publicProcedure
     .input(
       z.object({
-        publicKey: z.string().length(130, 'Cheie publică invalidă.'),
+        publicKey: z.string().length(eccCurvePublicKeyLength, 'Cheie publică invalidă.'),
       }),
     )
-    .query(async ({ ctx, input: { publicKey } }) => {
-      const user = await ctx.prisma.appUser.findFirst({
+    .query(async ({ ctx: { prisma }, input: { publicKey } }) => {
+      const user = await prisma.appUser.findFirst({
         where: {
           publicKey,
         },
       });
       return user;
     }),
-  updateUserEmail: publicProcedure
+  updateEmail: authenticatedProcedure
     .input(
       z.object({
         email: z.string().email('Această adresă de email nu este validă.'),
       }),
     )
-    .mutation(async ({ ctx, input: { email } }) => {
-      const match = await ctx.prisma.appUser.findUnique({
+    .mutation(async ({ ctx: { prisma, session }, input: { email } }) => {
+      const match = await prisma.appUser.findUnique({
         where: {
           email,
         },
@@ -51,8 +57,8 @@ export const userRouter = createTRPCRouter({
         });
       }
 
-      const { publicKey } = getUserKeysWithGuard(ctx.session);
-      await ctx.prisma.appUser.update({
+      const { publicKey } = getUserKeysWithGuard(session);
+      await prisma.appUser.update({
         where: {
           publicKey,
         },
@@ -61,16 +67,16 @@ export const userRouter = createTRPCRouter({
         },
       });
     }),
-  updateUserName: publicProcedure
+  updateName: authenticatedProcedure
     .input(
       z.object({
         name: z.string().min(3, 'Acest nume nu este valid.'),
       }),
     )
-    .mutation(async ({ ctx, input: { name } }) => {
-      const { publicKey } = getUserKeysWithGuard(ctx.session);
+    .mutation(async ({ ctx: { prisma, session }, input: { name } }) => {
+      const { publicKey } = getUserKeysWithGuard(session);
 
-      await ctx.prisma.appUser.update({
+      await prisma.appUser.update({
         where: {
           publicKey,
         },
@@ -78,5 +84,85 @@ export const userRouter = createTRPCRouter({
           name,
         },
       });
+    }),
+  uploadProfileImage: authenticatedProcedure
+    .input(
+      z.object({
+        fileType: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx: { session }, input: { fileType } }) => {
+      const { publicKey } = getUserKeysWithGuard(session);
+
+      const s3Key = getProfileImageS3Key(publicKey);
+
+      const s3 = new S3({});
+      const presignedPost = await createPresignedPost(s3, {
+        Bucket: env.AWS_S3_BUCKET_NAME_PROFILE_IMAGES,
+        Key: s3Key,
+        Fields: {
+          'Content-Type': fileType,
+        },
+        Expires: defaultAwsExpirationSeconds,
+        Conditions: [['content-length-range', 0, maxProfileImageSizeInBytes]],
+      });
+
+      return {
+        presignedPost,
+      };
+    }),
+  deleteProfileImage: authenticatedProcedure.mutation(async ({ ctx: { session } }) => {
+    const { publicKey } = getUserKeysWithGuard(session);
+
+    const s3Key = getProfileImageS3Key(publicKey);
+
+    const s3 = new S3({});
+    const deleteCommand = new DeleteObjectCommand({
+      Bucket: env.AWS_S3_BUCKET_NAME_PROFILE_IMAGES,
+      Key: s3Key,
+    });
+    await s3.send(deleteCommand);
+  }),
+  initiateProfileImageDownload: authenticatedProcedure
+    .input(
+      z.object({
+        publicKey: z.string().length(eccCurvePublicKeyLength, 'Cheie publică invalidă.'),
+      }),
+    )
+    .query(async ({ ctx: { session } }) => {
+      const { publicKey } = getUserKeysWithGuard(session);
+      const s3Key = getProfileImageS3Key(publicKey);
+
+      const s3 = new S3({});
+
+      try {
+        const headCommand = new HeadObjectCommand({
+          Bucket: env.AWS_S3_BUCKET_NAME_PROFILE_IMAGES,
+          Key: s3Key,
+        });
+        const headCommandResponse = await s3.send(headCommand);
+
+        if (headCommandResponse.ContentLength === 0) {
+          return {
+            signedGetUrl: null,
+          };
+        }
+      } catch (_) {
+        return {
+          signedGetUrl: null,
+        };
+      }
+
+      const getCommand = new GetObjectCommand({
+        Bucket: env.AWS_S3_BUCKET_NAME_PROFILE_IMAGES,
+        Key: s3Key,
+      });
+      const signedGetUrl = await getSignedUrl(s3, getCommand, {
+        expiresIn: defaultAwsExpirationSeconds,
+      });
+
+      return {
+        signedGetUrl,
+      };
     }),
 });

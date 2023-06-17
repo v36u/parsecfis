@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState, type ChangeEvent, type FC } from 'react';
 import Particles from 'react-particles';
 import { api } from '~/utils/api';
-import { eccCurveName, maxFileSizeInBytes } from '~/utils/constants';
+import { eccCurveName, eccCurvePublicKeyLength, maxFileSizeInBytes } from '~/utils/constants';
 import { encrypt } from '~/utils/helpers/encryption';
 import { getFormattedFileSize } from '~/utils/helpers/file';
 import { useAppError } from '~/utils/hooks/useAppError';
@@ -50,6 +50,8 @@ const AuthenticatedHomeContent: FC<Props> = ({ session }) => {
     }
     setFile(files[0]);
   };
+
+  const [isUploadLoading, setIsUploadLoading] = useState(false);
 
   const [dragging, setDragging] = useState(false);
   const handleDragEnter = useCallback((event: DragEvent) => {
@@ -137,6 +139,8 @@ const AuthenticatedHomeContent: FC<Props> = ({ session }) => {
       return;
     }
 
+    setIsUploadLoading(true);
+
     const { receiverPublicKey, presignedPost } = shareFileData;
     const senderEcdh = createECDH(eccCurveName);
     senderEcdh.setPrivateKey(Buffer.from(session.user.privateKey, 'hex'));
@@ -144,7 +148,7 @@ const AuthenticatedHomeContent: FC<Props> = ({ session }) => {
     const symmetricKey = senderEcdh.computeSecret(Buffer.from(receiverPublicKey, 'hex')).toString('hex');
 
     const reader = new FileReader();
-    reader.onloadend = async (event) => {
+    reader.onloadend = (event) => {
       const result = event.target?.result;
       if (!result) {
         setGeneralError('A intervenit o eroare. Te rugăm să reîncerci.');
@@ -167,20 +171,24 @@ const AuthenticatedHomeContent: FC<Props> = ({ session }) => {
         formData.append(key, value);
       });
 
-      try {
-        const uploadResult = await fetch(presignedPost.url, {
-          method: 'POST',
-          body: formData,
-        });
-        if (uploadResult.ok) {
-          setDisplaySuccessMessage(true);
-        } else {
+      fetch(presignedPost.url, {
+        method: 'POST',
+        body: formData,
+      })
+        .then(async (response) => {
+          if (response.ok) {
+            setDisplaySuccessMessage(true);
+          } else {
+            setGeneralError('A intervenit o eroare. Te rugăm să reîncerci.');
+            console.error(await response.text());
+          }
+        })
+        .catch(() => {
           setGeneralError('A intervenit o eroare. Te rugăm să reîncerci.');
-          console.error(await uploadResult.text());
-        }
-      } catch (_) {
-        setGeneralError('A intervenit o eroare. Te rugăm să reîncerci.');
-      }
+        })
+        .finally(() => {
+          setIsUploadLoading(false);
+        });
     };
 
     reader.readAsArrayBuffer(file);
@@ -207,6 +215,8 @@ const AuthenticatedHomeContent: FC<Props> = ({ session }) => {
   } else if ((numberOfNewReceivedFiles as number) >= 20) {
     newFilesString = `${numberOfNewReceivedFiles as number} de fișiere noi`;
   }
+
+  const isLoading = isShareFileLoading || isUploadLoading || isShareFileSuccess;
 
   return (
     <div className="flex w-11/12 flex-col items-center justify-center md:w-9/12 lg:w-7/12 xl:w-5/12">
@@ -284,7 +294,7 @@ const AuthenticatedHomeContent: FC<Props> = ({ session }) => {
               value={receiverIdentifier}
               id="input-group-receiver"
               className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-purple-600 focus:ring-0 focus:ring-purple-600"
-              placeholder="Cheie publică de 130 de caractere sau o adresă de email validă..."
+              placeholder={`Cheie publică de ${eccCurvePublicKeyLength} de caractere sau o adresă de email validă...`}
               onChange={handleReceiverChange}
             />
           </div>
@@ -353,12 +363,12 @@ const AuthenticatedHomeContent: FC<Props> = ({ session }) => {
             className={classNames(
               'group relative mt-3 inline-flex items-center justify-center overflow-hidden rounded-lg p-0.5 text-sm font-medium text-gray-900 hover:text-slate-50 focus:outline-none focus:ring-4 focus:ring-purple-300 group-hover:from-purple-600  group-hover:to-blue-500',
               {
-                'is-loading bg-slate-100': isShareFileLoading,
-                'bg-gradient-to-br from-purple-600 to-blue-500': !isShareFileLoading,
+                'is-loading bg-slate-100': isLoading,
+                'bg-gradient-to-br from-purple-600 to-blue-500': !isLoading,
               },
             )}
           >
-            {(isShareFileLoading || isShareFileSuccess) && <LoadingSpinner />}
+            {isLoading && <LoadingSpinner />}
             <span className="relative rounded-md bg-slate-50 px-5 py-2.5 transition-all duration-75 ease-in group-hover:bg-opacity-0">Partajează</span>
           </button>
           <div className="z-10 mt-1 bg-gradient-to-br from-red-800 to-red-500 bg-clip-text text-sm font-bold text-transparent">{generalError}</div>
