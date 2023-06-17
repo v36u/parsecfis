@@ -8,7 +8,7 @@ type Props = {
 const ProfileData: FC<Props> = ({ label, value }) => {
   return (
     <div className="z-10 mb-6">
-      <span className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">{label}:</span>
+      <span className="mb-2 block text-sm font-medium text-gray-900">{label}:</span>
       {value}
     </div>
   );

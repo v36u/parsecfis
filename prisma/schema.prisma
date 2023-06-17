@@ -9,13 +9,14 @@ datasource db {
 }
 
 model AppUser {
-    id            Int       @id @default(autoincrement())
-    publicKey     String    @unique
-    email         String?   @unique
-    name          String?
-    registeredAt  DateTime  @default(now())
-    sentFiles     AppFile[] @relation(name: "sender")
-    receivedFiles AppFile[] @relation(name: "receiver")
+    id                  Int       @id @default(autoincrement())
+    publicKey           String    @unique
+    email               String?   @unique
+    name                String?
+    registeredAt        DateTime  @default(now())
+    profilePictureS3Key String?
+    sentFiles           AppFile[] @relation(name: "sender")
+    receivedFiles       AppFile[] @relation(name: "receiver")
 }
 
 model AppFile {

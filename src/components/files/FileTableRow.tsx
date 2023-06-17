@@ -45,7 +45,7 @@ const FileTableRow: FC<Props> = ({ row, received, sent, deleted, handleDownload,
   }, [deleteIsLoading]);
 
   return (
-    <tr className="border-y bg-slate-50 bg-opacity-95 hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-600">
+    <tr className="border-y bg-slate-50 bg-opacity-95 hover:bg-white">
       <td className="py-4 text-center">{row.fileName}</td>
       <td className="py-4 text-center">
         <PublicKeyBadge
@@ -67,7 +67,7 @@ const FileTableRow: FC<Props> = ({ row, received, sent, deleted, handleDownload,
         <td className="flex items-center justify-center gap-6 py-4">
           <button
             type="button"
-            className="font-medium text-blue-600 hover:underline dark:text-blue-500"
+            className="font-medium text-blue-600 hover:underline"
             onClick={() => handleDownload(row)}
           >
             <Tooltip
@@ -92,7 +92,7 @@ const FileTableRow: FC<Props> = ({ row, received, sent, deleted, handleDownload,
           </button>
           <button
             type="button"
-            className="font-medium text-blue-600 hover:underline dark:text-blue-500"
+            className="font-medium text-blue-600 hover:underline"
             onClick={() => handleDelete(row)}
           >
             <Tooltip

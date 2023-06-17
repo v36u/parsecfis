@@ -80,7 +80,7 @@ const DeletedFilesPage: NextPage<Props> = ({ serverSession }) => {
 
       <div className="mt-12 flex items-center justify-center">
         <Link
-          className="inline-flex rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 p-0.5 text-center text-sm font-medium text-slate-50 shadow-lg shadow-purple-500/50 hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-purple-300 dark:shadow-lg dark:shadow-purple-800/80 dark:focus:ring-purple-800"
+          className="inline-flex rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 p-0.5 text-center text-sm font-medium text-slate-50 shadow-lg shadow-purple-500/50 hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-purple-300"
           href="/fisiere/"
         >
           <span className="px-5 py-2.5">

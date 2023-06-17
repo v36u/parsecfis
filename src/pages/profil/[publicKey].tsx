@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 import Head from 'next/head';
 import ProfileData from '~/components/profile/ProfileData';
 import ProfileInput from '~/components/profile/ProfileInput';
+import ProfilePicture from '~/components/profile/ProfilePicture';
 import LoadingSpinner from '~/components/shared/LoadingSpinner';
 import PublicKeyBadge from '~/components/shared/PublicKeyBadge';
 import { nextAuthOptions } from '~/server/auth';
@@ -41,7 +42,7 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
       </Head>
 
       <div className="flex flex-col items-center justify-center">
-        <div className="relative z-10 block w-10/12 rounded-xl border border-gray-200 bg-white p-6 shadow dark:border-gray-700 dark:bg-gray-800 sm:w-8/12 md:w-6/12 lg:w-4/12">
+        <div className="relative z-10 block w-10/12 rounded-xl border border-gray-200 bg-white p-6 shadow sm:w-8/12 md:w-6/12 lg:w-4/12">
           <h1 className="text-center text-2xl font-bold">{textProfil}</h1>
           <h4 className="text-md mt-1.5 text-center font-bold text-gray-500">
             <span>Adresă: </span>
@@ -56,6 +57,7 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
             })}
           >
             {isLoading && <LoadingSpinner />}
+            <ProfilePicture />
             {isReadOnly && data?.name && (
               <ProfileData
                 label="Nume"

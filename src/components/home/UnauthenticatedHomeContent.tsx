@@ -106,14 +106,14 @@ const UnauthenticatedHomeContent: FC = () => {
 
       <label
         htmlFor="private-key"
-        className="text-md mb-1 block font-bold text-gray-900 dark:text-slate-50"
+        className="text-md mb-1 block font-bold text-gray-900"
       >
         Cheia privată
       </label>
       <input
         id="private-key"
         type="text"
-        className="block w-11/12 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-purple-600 focus:ring-purple-600 dark:border-gray-600 dark:bg-gray-700 dark:text-slate-50 dark:placeholder-gray-400 dark:focus:border-purple-500 dark:focus:ring-purple-500 sm:w-8/12 md:w-6/12 lg:w-5/12 xl:w-3/12"
+        className="block w-11/12 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-purple-600 focus:ring-purple-600 sm:w-8/12 md:w-6/12 lg:w-5/12 xl:w-3/12"
         placeholder="Introdu cheia privată aici..."
         value={privateKey}
         onChange={handleTextAreaChange}
@@ -122,7 +122,7 @@ const UnauthenticatedHomeContent: FC = () => {
       <button
         type="button"
         className={classNames(
-          'group relative mb-3 mt-6 inline-flex items-center justify-center overflow-hidden rounded-lg p-0.5 text-sm font-medium text-gray-900 hover:text-slate-50 focus:outline-none focus:ring-4 focus:ring-purple-300 group-hover:from-purple-600 group-hover:to-blue-500 dark:text-slate-50 dark:focus:ring-blue-800',
+          'group relative mb-3 mt-6 inline-flex items-center justify-center overflow-hidden rounded-lg p-0.5 text-sm font-medium text-gray-900 hover:text-slate-50 focus:outline-none focus:ring-4 focus:ring-purple-300 group-hover:from-purple-600  group-hover:to-blue-500',
           {
             'is-loading bg-slate-100': isLoading,
             'bg-gradient-to-br from-purple-600 to-blue-500': !isLoading,
@@ -131,13 +131,11 @@ const UnauthenticatedHomeContent: FC = () => {
         onClick={handleAuthenticateButtonClick}
       >
         {isLoading && <LoadingSpinner />}
-        <span className="relative rounded-md bg-slate-50 px-5 py-2.5 transition-all duration-75 ease-in group-hover:bg-opacity-0 dark:bg-gray-900">
-          Autentificare
-        </span>
+        <span className="relative rounded-md bg-slate-50 px-5 py-2.5 transition-all duration-75 ease-in group-hover:bg-opacity-0">Autentificare</span>
       </button>
       <button
         type="button"
-        className="inline-flex rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 p-0.5 text-center text-sm font-medium text-slate-50 shadow-lg shadow-purple-500/50 hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-purple-300 dark:shadow-lg dark:shadow-purple-800/80 dark:focus:ring-purple-800"
+        className="inline-flex rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 p-0.5 text-center text-sm font-medium text-slate-50 shadow-lg shadow-purple-500/50 hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-purple-300"
         onClick={handleGenerateButtonClick}
       >
         <span className="px-5 py-2.5">Generare cheie privată</span>
@@ -150,24 +148,24 @@ const UnauthenticatedHomeContent: FC = () => {
         <Modal.Header>Confirmare înregistrare</Modal.Header>
         <Modal.Body>
           <div className="space-y-6">
-            <p className="text-base leading-relaxed text-gray-500 dark:text-gray-400">
+            <p className="text-base leading-relaxed text-gray-500">
               Înainte de a continua, este esențial să îți asiguri siguranța datelor prin salvarea cheii private pe care ai introdus-o. Te rugăm să acorzi o
               atenție deosebită acestui pas.
             </p>
-            <p className="text-base leading-relaxed text-gray-500 dark:text-gray-400">
+            <p className="text-base leading-relaxed text-gray-500">
               Această cheie privată este un instrument unic și esențial pentru criptarea și accesarea fișierelor tale. Odată salvată, nu există nicio metodă
               prin care noi putem să o recuperăm sau să o reînnoim în numele tău. Prin urmare, este crucial să o salvezi într-un loc sigur și accesibil pentru
               tine.
             </p>
-            <p className="text-base leading-relaxed text-gray-500 dark:text-gray-400">
+            <p className="text-base leading-relaxed text-gray-500">
               Dacă pierzi această cheie, <strong>vei pierde accesul la toate fișierele tale criptate</strong>, deoarece acestea nu pot fi decriptate fără ea.
               Aceasta este o măsură de securitate puternică care îți protejează datele, dar care necesită de asemenea și responsabilitate din partea ta pentru
               a-ți asigura accesul la acestea în viitor.
             </p>
-            <p className="text-base leading-relaxed text-gray-500 dark:text-gray-400">
+            <p className="text-base leading-relaxed text-gray-500">
               <strong>Recomandări de stocare:</strong>
             </p>
-            <ol className="list-inside list-decimal space-y-4 text-gray-500 dark:text-gray-400">
+            <ol className="list-inside list-decimal space-y-4 text-gray-500">
               <li>
                 <span className="font-semibold">Stocarea offline (Recomandată):</span> Stocarea offline este cea mai sigură metodă. Există două modalități
                 principale prin care poți stoca cheia offline:

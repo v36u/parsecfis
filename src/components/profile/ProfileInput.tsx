@@ -71,7 +71,7 @@ const ProfileInput: FC<Props> = ({ mutation, field, label, defaultValue, icon, p
     <div className="z-10 mb-6">
       <label
         htmlFor={`input-group-${field}`}
-        className="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
+        className="mb-2 block text-sm font-medium text-gray-900"
       >
         {label}
       </label>
@@ -89,7 +89,7 @@ const ProfileInput: FC<Props> = ({ mutation, field, label, defaultValue, icon, p
           type="text"
           value={value}
           id={`input-group-${field}`}
-          className="block w-full rounded-lg border-0 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 focus:ring-0 focus:ring-offset-0  dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+          className="block w-full rounded-lg border-0 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 focus:ring-0 focus:ring-offset-0"
           placeholder={placeholder}
           onChange={handleOnChange}
         />

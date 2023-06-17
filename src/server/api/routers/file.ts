@@ -249,7 +249,7 @@ export const fileRouter = createTRPCRouter({
 
       const s3 = new S3({});
       const presignedPost = await createPresignedPost(s3, {
-        Bucket: env.AWS_S3_BUCKET_NAME,
+        Bucket: env.AWS_S3_BUCKET_NAME_FILES,
         Key: s3Key,
         Fields: {
           'Content-Type': fileType,
@@ -313,7 +313,7 @@ export const fileRouter = createTRPCRouter({
 
       const s3 = new S3({});
       const getCommand = new GetObjectCommand({
-        Bucket: env.AWS_S3_BUCKET_NAME,
+        Bucket: env.AWS_S3_BUCKET_NAME_FILES,
         Key: s3Key,
       });
       const signedGetUrl = await getSignedUrl(s3, getCommand, {
@@ -367,7 +367,7 @@ export const fileRouter = createTRPCRouter({
 
       const s3 = new S3({});
       const deleteCommand = new DeleteObjectCommand({
-        Bucket: env.AWS_S3_BUCKET_NAME,
+        Bucket: env.AWS_S3_BUCKET_NAME_FILES,
         Key: s3Key,
       });
 

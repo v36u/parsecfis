@@ -193,8 +193,8 @@ const FileTable: FC<Props> = ({ received, sent, deleted, session, pageData: { ro
         })}
       >
         {isLoading && <LoadingSpinner />}
-        <table className="w-full text-left text-sm text-gray-500 dark:text-gray-400">
-          <thead className="bg-slate-200 bg-opacity-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-400">
+        <table className="w-full text-left text-sm text-gray-500">
+          <thead className="bg-slate-200 bg-opacity-50 text-xs uppercase text-gray-700 ">
             <tr>
               <th
                 scope="col"
@@ -243,7 +243,7 @@ const FileTable: FC<Props> = ({ received, sent, deleted, session, pageData: { ro
           </thead>
           <tbody>
             {metadata.totalFiles === 0 && (
-              <tr className="border-y bg-slate-50 bg-opacity-95 hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-600">
+              <tr className="bg-slate-50 bg-opacity-95 hover:bg-white">
                 <td
                   className="py-4 text-center"
                   colSpan={deleted ? 5 : 4}
@@ -274,12 +274,12 @@ const FileTable: FC<Props> = ({ received, sent, deleted, session, pageData: { ro
         </table>
         {metadata.totalFiles > 1 && (
           <nav className="flex items-center justify-between bg-slate-200 bg-opacity-50 p-4">
-            <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+            <span className="text-sm font-normal text-gray-500">
               Se afișează{' '}
-              <span className="font-semibold text-gray-900 dark:text-white">
+              <span className="font-semibold text-gray-900">
                 {(currentPage - 1) * filesPerPage + 1}-{isLastPage ? metadata.totalFiles : currentPage * filesPerPage}
               </span>{' '}
-              din <span className="font-semibold text-gray-900 dark:text-white">{metadata.totalFiles}</span>
+              din <span className="font-semibold text-gray-900">{metadata.totalFiles}</span>
             </span>
             {metadata.totalPages > 1 && (
               <ul className="inline-flex items-center -space-x-px">
@@ -292,7 +292,7 @@ const FileTable: FC<Props> = ({ received, sent, deleted, session, pageData: { ro
                       type="button"
                       disabled={isFirstPage}
                       className={classNames(
-                        'ml-0 block rounded-l-lg border border-gray-300 bg-white bg-opacity-80 px-3 py-2 leading-tight text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white',
+                        'ml-0 block rounded-l-lg border border-gray-300 bg-white bg-opacity-80 px-3 py-2 leading-tight text-gray-500    hover:bg-gray-100 hover:text-gray-700',
                         {
                           'pointer-events-none opacity-50': isFirstPage,
                         },
@@ -324,14 +324,11 @@ const FileTable: FC<Props> = ({ received, sent, deleted, session, pageData: { ro
                       <button
                         type="button"
                         disabled={isCurrentPage || isEllipsis}
-                        className={classNames(
-                          'block border bg-opacity-80 px-3 py-2 leading-tight hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white',
-                          {
-                            'border-blue-300 bg-blue-50 text-blue-600': paginationItem === currentPage.toString(),
-                            'border-gray-300 bg-white text-gray-500': paginationItem !== currentPage.toString(),
-                            'pointer-events-none': isCurrentPage || isEllipsis,
-                          },
-                        )}
+                        className={classNames('block border bg-opacity-80 px-3 py-2 leading-tight hover:bg-gray-100 hover:text-gray-700', {
+                          'border-blue-300 bg-blue-50 text-blue-600': paginationItem === currentPage.toString(),
+                          'border-gray-300 bg-white text-gray-500': paginationItem !== currentPage.toString(),
+                          'pointer-events-none': isCurrentPage || isEllipsis,
+                        })}
                         onClick={() => {
                           if (isEllipsis) {
                             return;
@@ -353,7 +350,7 @@ const FileTable: FC<Props> = ({ received, sent, deleted, session, pageData: { ro
                       type="button"
                       disabled={isLastPage}
                       className={classNames(
-                        'ml-0 block rounded-r-lg border border-gray-300 bg-white bg-opacity-80 px-3 py-2 leading-tight text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white',
+                        'ml-0 block rounded-r-lg border border-gray-300 bg-white bg-opacity-80 px-3 py-2 leading-tight text-gray-500    hover:bg-gray-100 hover:text-gray-700',
                         {
                           'pointer-events-none opacity-50': isLastPage,
                         },
