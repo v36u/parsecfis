@@ -27,7 +27,7 @@ export const userRouter = createTRPCRouter({
   updateEmail: authenticatedProcedure
     .input(
       z.object({
-        email: z.string().email('Această adresă de email nu este validă.'),
+        email: z.string().email('Această adresă de email este invalidă.'),
       }),
     )
     .mutation(async ({ ctx: { prisma, session }, input: { email } }) => {
@@ -56,7 +56,7 @@ export const userRouter = createTRPCRouter({
   updateName: authenticatedProcedure
     .input(
       z.object({
-        name: z.string().min(3, 'Acest nume nu este valid.'),
+        name: z.string().min(3, 'Acest nume este invalid.'),
       }),
     )
     .mutation(async ({ ctx: { prisma, session }, input: { name } }) => {

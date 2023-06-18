@@ -1,7 +1,7 @@
 import { type FileTablePageData } from './@types/FileTablePageData';
 
-export const maxFileSizeInBytes = 128 * 1024 * 1024;
-export const maxProfileImageSizeInBytes = 1024 * 1024;
+export const maxFileSizeInBytes = 1024 * 1024 * 1024;
+export const maxProfileImageSizeInBytes = 4 * 1024 * 1024;
 
 export const filesPerPage = 10;
 

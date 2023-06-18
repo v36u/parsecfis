@@ -21,7 +21,7 @@ const Navigation: FC = () => {
   };
 
   const linkClassNames =
-    'w-fit block py-2 pr-4 pl-3 md:p-0 text-gray-700 hover:bg-gray-50 md:border-0 md:hover:bg-transparent md:hover:text-blue-700 md::bg-transparent md::text-white';
+    'w-full block py-2 pr-4 pl-3 md:p-0 text-gray-700 hover:bg-gray-50 md:border-0 md:hover:bg-transparent md:hover:text-blue-700 md::bg-transparent md::text-white';
 
   const firstPageLinkLabel = session.status === 'unauthenticated' ? 'Autentificare' : 'Partajare';
 
@@ -72,13 +72,15 @@ const Navigation: FC = () => {
                 className={classNames(linkClassNames, 'relative')}
                 href="/fisiere/"
               >
-                {!!numberOfNewReceivedFiles && numberOfNewReceivedFiles > 0 && (
-                  <FontAwesomeIcon
-                    className="text-2 absolute -right-0 h-3 w-3 rounded-full border-2 border-white font-bold text-purple-500 md:-right-3.5 md:-top-1"
-                    icon={faCertificate}
-                  />
-                )}
-                Fișiere
+                <div className="relative w-fit">
+                  {!!numberOfNewReceivedFiles && numberOfNewReceivedFiles > 0 && (
+                    <FontAwesomeIcon
+                      className="text-2 absolute -right-4 h-3 w-3 rounded-full border-2 border-white font-bold text-purple-500 md:-right-3.5 md:-top-1"
+                      icon={faCertificate}
+                    />
+                  )}
+                  Fișiere
+                </div>
               </Link>
             </li>
             <li className="border-b border-gray-100 md:border-none">

@@ -29,7 +29,7 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly, serverSess
 
   const textProfil = isReadOnly ? 'Profil' : 'Profilul tău';
 
-  const { data: userData, isLoading: isUserDataLoading } = api.user.fetchUser.useQuery(
+  const { data: userData, isFetching: isUserDataLoading } = api.user.fetchUser.useQuery(
     {
       publicKey,
     },
@@ -37,12 +37,13 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly, serverSess
       refetchOnMount: false,
       refetchOnReconnect: false,
       refetchOnWindowFocus: false,
+      cacheTime: 0,
     },
   );
   const nameMutation = api.user.updateName.useMutation() as UseMutationResult;
   const emailMutation = api.user.updateEmail.useMutation() as UseMutationResult;
 
-  const { data: initialProfileImageData, isLoading: isInitialProfileImageDataLoading } = api.user.initiateProfileImageDownload.useQuery(
+  const { data: initialProfileImageData, isFetching: isInitialProfileImageDataLoading } = api.user.initiateProfileImageDownload.useQuery(
     {
       publicKey,
     },
@@ -50,13 +51,15 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly, serverSess
       refetchOnMount: false,
       refetchOnReconnect: false,
       refetchOnWindowFocus: false,
+      cacheTime: 0,
     },
   );
   const [initialProfileImageDataUrl, setInitialProfileImageDataUrl] = useState<string | null>(null);
   const [initialProfileImageFile, setInitialProfileImageFile] = useState<File | null>(null);
   const [isInitialProfileImageDownloading, setIsInitialProfileImageDownloading] = useState(false);
+
   useEffect(() => {
-    if (!initialProfileImageData) {
+    if (!initialProfileImageData || isInitialProfileImageDataLoading) {
       return;
     }
 
@@ -130,13 +133,10 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly, serverSess
       })
       .catch((error) => {
         console.error(error);
-      })
-      .finally(() => {
-        setIsInitialProfileImageDownloading(false);
       });
-  }, [initialProfileImageData, privateKey, publicKey]);
+  }, [initialProfileImageData, isInitialProfileImageDataLoading, privateKey, publicKey]);
 
-  const isLoading = isUserDataLoading || isInitialProfileImageDataLoading || isInitialProfileImageDownloading;
+  const isLoading = isUserDataLoading || isInitialProfileImageDataLoading;
 
   return (
     <>
@@ -172,39 +172,45 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly, serverSess
                 isPrivate={initialProfileImageData?.isPrivate ?? null}
                 isProfilePageLoading={isLoading}
                 pageSession={pageSession}
+                isInitialProfileImageDownloading={isInitialProfileImageDownloading}
+                setIsInitialProfileImageDownloading={setIsInitialProfileImageDownloading}
               />
             )}
-            {isReadOnly && userData?.name && (
-              <ProfileInputReadOnly
-                label="Nume"
-                value={userData.name}
-              />
-            )}
-            {!isReadOnly && (
-              <ProfileInput
-                mutation={nameMutation}
-                field="name"
-                label="Nume"
-                placeholder="Ex: Ion Popescu"
-                defaultValue={userData?.name ?? ''}
-                icon={faUser}
-              />
-            )}
-            {isReadOnly && userData?.email && (
-              <ProfileInputReadOnly
-                label="Email"
-                value={userData.email}
-              />
+            {isReadOnly && (
+              <div className="mt-1 flex items-center justify-center gap-10">
+                {userData?.name && (
+                  <ProfileInputReadOnly
+                    label="Nume"
+                    value={userData.name}
+                  />
+                )}
+                {userData?.email && (
+                  <ProfileInputReadOnly
+                    label="Email"
+                    value={userData.email}
+                  />
+                )}
+              </div>
             )}
             {!isReadOnly && (
-              <ProfileInput
-                mutation={emailMutation}
-                field="email"
-                label="Email"
-                placeholder="Ex: ion.popescu@email.com"
-                defaultValue={userData?.email ?? ''}
-                icon={faEnvelope}
-              />
+              <>
+                <ProfileInput
+                  mutation={nameMutation}
+                  field="name"
+                  label="Nume"
+                  placeholder="Ex: Ion Popescu"
+                  defaultValue={userData?.name ?? ''}
+                  icon={faUser}
+                />
+                <ProfileInput
+                  mutation={emailMutation}
+                  field="email"
+                  label="Email"
+                  placeholder="Ex: ion.popescu@email.com"
+                  defaultValue={userData?.email ?? ''}
+                  icon={faEnvelope}
+                />
+              </>
             )}
           </div>
         </div>

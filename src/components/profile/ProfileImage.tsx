@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import classNames from 'classnames';
 import { type Session } from 'next-auth';
 import Image from 'next/image';
-import { useCallback, useEffect, useState, type ChangeEvent, type FC } from 'react';
+import { useCallback, useEffect, useState, type ChangeEvent, type Dispatch, type FC, type SetStateAction } from 'react';
 import { api } from '~/utils/api';
 import { maxProfileImageSizeInBytes } from '~/utils/constants';
 import { encrypt } from '~/utils/helpers/encryption';
@@ -18,9 +18,19 @@ type Props = {
   isProfilePageLoading: boolean;
   isPrivate: boolean | null;
   pageSession: Session;
+  isInitialProfileImageDownloading: boolean;
+  setIsInitialProfileImageDownloading: Dispatch<SetStateAction<boolean>>;
 };
 
-const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, initialProfileImageFile, isProfilePageLoading, isPrivate, pageSession }) => {
+const ProfileImage: FC<Props> = ({
+  initialProfileImageDataUrl,
+  initialProfileImageFile,
+  isProfilePageLoading,
+  isPrivate,
+  pageSession,
+  isInitialProfileImageDownloading,
+  setIsInitialProfileImageDownloading,
+}) => {
   const {
     mutate: uploadProfileImage,
     data: uploadProfileImageData,
@@ -50,10 +60,57 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, initialProfileIma
   const [profileImageFile, setProfileImageFile] = useState<File | null>(initialProfileImageFile);
   useEffect(() => {
     setProfileImageFile(initialProfileImageFile);
-  }, [initialProfileImageFile]);
+    setIsInitialProfileImageDownloading(false);
+  }, [initialProfileImageFile, setIsInitialProfileImageDownloading]);
 
   const [isHovering, setIsHovering] = useState(false);
+  const [ignoreMouseEvents, setIgnoreMouseEvents] = useState(false);
+
+  const handleMouseEnter = () => {
+    if (!ignoreMouseEvents) {
+      setIsHovering(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (!ignoreMouseEvents) {
+      setIsHovering(false);
+    }
+  };
+
+  const handleTouchStart = () => {
+    setIsHovering(true);
+    setIgnoreMouseEvents(true);
+  };
+
+  const handleTouchEnd = () => {
+    setIsHovering(false);
+    setTimeout(() => {
+      setIgnoreMouseEvents(false);
+    }, 1500);
+  };
+
   const [error, setError] = useState('');
+  useEffect(() => {
+    let errorTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    if (error.length === 0) {
+      return () => {
+        if (errorTimeout) {
+          clearTimeout(errorTimeout);
+        }
+      };
+    }
+    errorTimeout = setTimeout(() => {
+      setError('');
+    }, 5000);
+
+    return () => {
+      if (errorTimeout) {
+        clearTimeout(errorTimeout);
+      }
+    };
+  }, [error.length]);
 
   const [isUploadLoading, setIsUploadLoading] = useState(false);
 
@@ -66,7 +123,7 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, initialProfileIma
     }
   }, [isPrivate]);
 
-  const [shouldReuploadProfileImage, setShouldReuploadProfileImage] = useState(false);
+  const [isReuploadLoading, setIsReuploadLoading] = useState(false);
   const getHandlePrivateProfileImageCheckboxChange = useCallback(
     () => (event: ChangeEvent<HTMLInputElement>) => {
       const { checked } = event.target;
@@ -76,12 +133,12 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, initialProfileIma
       }
 
       deleteProfileImage();
-      setShouldReuploadProfileImage(true);
+      setIsReuploadLoading(true);
     },
     [deleteProfileImage, profileImageFile],
   );
   useEffect(() => {
-    if (!shouldReuploadProfileImage) {
+    if (!isReuploadLoading) {
       return;
     }
     if (!isDeleteProfileImageSuccess) {
@@ -95,8 +152,7 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, initialProfileIma
       fileType: profileImageFile.type,
       isPrivate: isProfileImagePrivate,
     });
-    setShouldReuploadProfileImage(false);
-  }, [isDeleteProfileImageSuccess, isProfileImagePrivate, profileImageFile, shouldReuploadProfileImage, uploadProfileImage]);
+  }, [isDeleteProfileImageSuccess, isProfileImagePrivate, profileImageFile, isReuploadLoading, uploadProfileImage]);
 
   const clearProfileImage = useCallback(() => {
     setProfileImageFile(null);
@@ -119,6 +175,11 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, initialProfileIma
     }
     setProfileImageFile(file);
 
+    if (file.size > maxProfileImageSizeInBytes) {
+      setError(`Imaginea selectată nu a fost încărcată deoarece depășește limita de ${getFormattedFileSize(maxProfileImageSizeInBytes)}.`);
+      return;
+    }
+
     const dataUrlReader = new FileReader();
     dataUrlReader.onloadend = (event) => {
       const result = event.target?.result;
@@ -130,10 +191,6 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, initialProfileIma
     };
     dataUrlReader.readAsDataURL(file);
 
-    if (file.size > maxProfileImageSizeInBytes) {
-      setError(`Imaginea selectată nu a fost încărcată deoarece depășește limita de ${getFormattedFileSize(maxProfileImageSizeInBytes)}.`);
-      return;
-    }
     uploadProfileImage({
       fileType: file.type,
       isPrivate: isProfileImagePrivate,
@@ -195,6 +252,7 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, initialProfileIma
           setError('A intervenit o eroare. Te rugăm să reîncerci.');
         })
         .finally(() => {
+          setIsReuploadLoading(false);
           setIsUploadLoading(false);
           resetUploadProfileImage();
         });
@@ -213,7 +271,6 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, initialProfileIma
 
   const handleDeleteProfileImage = () => {
     if (error.length > 0) {
-      clearProfileImage();
       setError('');
       return;
     }
@@ -234,7 +291,9 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, initialProfileIma
     resetDeleteProfileImage();
   }, [clearProfileImage, isDeleteProfileImageError, isDeleteProfileImageSuccess, processedDeleteProfileImageError, resetDeleteProfileImage]);
 
-  const isLoading = !isProfilePageLoading && (isUploadProfileImageLoading || isUploadLoading || isDeleteProfileImageLoading);
+  const isLoading =
+    !isProfilePageLoading &&
+    (isUploadProfileImageLoading || isUploadLoading || isDeleteProfileImageLoading || isInitialProfileImageDownloading || isReuploadLoading);
 
   return (
     <div className=" mt-3 flex flex-col items-center justify-center">
@@ -244,8 +303,10 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, initialProfileIma
           'is-loading border-2 border-dashed border-purple-200': isLoading,
           'border-2 border-dashed border-purple-600 bg-purple-100': !isLoading,
         })}
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         {isLoading && <LoadingSpinner />}
         <div
@@ -286,33 +347,38 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, initialProfileIma
         />
       </label>
       {profileImageDataUrl && (
-        <>
-          {error.length === 0 && (
-            <div className="mb-1 flex items-center justify-center">
-              <input
-                id="private-profile-image"
-                type="checkbox"
-                onChange={getHandlePrivateProfileImageCheckboxChange()}
-                checked={isProfileImagePrivate}
-                className="h-4 w-4 rounded border-gray-300 bg-gray-100 text-purple-600 focus:ring-2 focus:ring-purple-500"
-              />
-              <label
-                htmlFor="private-profile-image"
-                className="ml-2 text-sm font-medium text-gray-900"
-              >
-                Imagine privată
-              </label>
-            </div>
-          )}
+        <div className="flex gap-5">
+          <div className="flex items-center justify-center">
+            <input
+              id="private-profile-image"
+              type="checkbox"
+              onChange={getHandlePrivateProfileImageCheckboxChange()}
+              checked={isProfileImagePrivate}
+              className="h-4 w-4 rounded border-gray-300 bg-gray-100 text-purple-600 focus:ring-2 focus:ring-purple-500"
+            />
+            <label
+              htmlFor="private-profile-image"
+              className="ml-2 cursor-pointer text-sm font-medium text-gray-900"
+            >
+              Imagine
+              <br />
+              privată
+            </label>
+          </div>
           <button
             type="button"
-            className="text-red-500"
+            className="flex items-center justify-center text-red-500"
             value={profileImageInputValue}
             onClick={handleDeleteProfileImage}
           >
-            <FontAwesomeIcon icon={faTrashCan} /> Șterge imaginea
+            <FontAwesomeIcon icon={faTrashCan} />{' '}
+            <span className="ml-2">
+              Ștergere
+              <br />
+              imagine
+            </span>
           </button>
-        </>
+        </div>
       )}
       <div className="z-10 mt-1 bg-gradient-to-br from-red-800 to-red-500 bg-clip-text text-center text-sm font-bold text-transparent">{error}</div>
     </div>

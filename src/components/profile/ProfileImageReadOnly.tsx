@@ -3,7 +3,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import classNames from 'classnames';
 import Image from 'next/image';
 import { type FC } from 'react';
-import LoadingSpinner from '../shared/LoadingSpinner';
 
 type Props = {
   initialProfileImageDataUrl: string | null;
@@ -20,7 +19,6 @@ const ProfileImageReadOnly: FC<Props> = ({ initialProfileImageDataUrl, isProfile
           'bg-purple-100': !isProfilePageLoading,
         })}
       >
-        {isProfilePageLoading && <LoadingSpinner />}
         <div className="relative flex flex-col justify-center text-center">
           {initialProfileImageDataUrl ? (
             <div className="relative h-48 w-48 overflow-hidden rounded-full">

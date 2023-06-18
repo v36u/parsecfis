@@ -219,7 +219,7 @@ const AuthenticatedHomeContent: FC<Props> = ({ session }) => {
         <>
           <FileSharedSuccessfullyParticles />
           <div className="z-20">
-            <h1 className="mb-6 text-3xl font-bold text-green-500">Fișierul a fost partajat cu succes!</h1>
+            <h1 className="mb-6 text-center text-3xl font-bold text-green-500">Fișierul a fost partajat cu succes!</h1>
           </div>
           <div className="flex items-center justify-center gap-6">
             <button

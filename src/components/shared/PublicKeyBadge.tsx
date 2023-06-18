@@ -40,7 +40,7 @@ const PublicKeyBadge: FC<Props> = ({ publicKey, displayCopyButton, displayProfil
       </span>
       {displayCopyButton && (
         <Tooltip
-          content="Copiază cheia publică"
+          content="Copiere cheie publică"
           animation="duration-500"
         >
           <button
@@ -55,7 +55,7 @@ const PublicKeyBadge: FC<Props> = ({ publicKey, displayCopyButton, displayProfil
       )}
       {displayProfileButton && (
         <Tooltip
-          content="Vezi profilul"
+          content="Vizualizare profil"
           animation="duration-500"
         >
           <Link
