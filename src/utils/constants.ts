@@ -1,6 +1,6 @@
 import { type FileTablePageData } from './@types/FileTablePageData';
 
-export const maxFileSizeInBytes = 1024 * 1024 * 1024;
+export const maxFileSizeInBytes = 512 * 1024 * 1024;
 export const maxProfileImageSizeInBytes = 4 * 1024 * 1024;
 
 export const filesPerPage = 10;
@@ -12,6 +12,7 @@ export const eccCurvePublicKeyLength = 130;
 
 export const profileImagePrefix = 'pfp_';
 
-export const defaultAwsExpirationSeconds = 5;
+export const defaultAwsFileExpirationSeconds = 120;
+export const defaultAwsProfilePictureExpirationSeconds = 5;
 
 export const ivBytes = 16;

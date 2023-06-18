@@ -6,9 +6,7 @@ import Image from 'next/image';
 import { useCallback, useEffect, useState, type ChangeEvent, type Dispatch, type FC, type SetStateAction } from 'react';
 import { api } from '~/utils/api';
 import { maxProfileImageSizeInBytes } from '~/utils/constants';
-import { encrypt } from '~/utils/helpers/encryption';
 import { getFormattedFileSize } from '~/utils/helpers/file';
-import { getBufferFromReaderResult } from '~/utils/helpers/shared';
 import { useAppError } from '~/utils/hooks/useAppError';
 import LoadingSpinner from '../shared/LoadingSpinner';
 
@@ -222,40 +220,43 @@ const ProfileImage: FC<Props> = ({
         return;
       }
 
-      let formDataFile: File | Blob = profileImageFile;
+      const encryptionWorker = new Worker(new URL('../../utils/workers/fileEncryptionWebWorker', import.meta.url));
 
-      if (isProfileImagePrivate) {
-        const resultBuffer = getBufferFromReaderResult(result);
-        const { encryptedBuffer: encryptedResultBuffer } = encrypt(resultBuffer, pageSession.user.privateKey);
-        formDataFile = new Blob([encryptedResultBuffer], {
-          type: profileImageFile.type,
+      encryptionWorker.onmessage = (event) => {
+        const formData = new FormData();
+        Object.entries({ ...presignedPost.fields, file: event.data as File }).forEach(([key, value]) => {
+          formData.append(key, value);
         });
-      }
 
-      const formData = new FormData();
-      Object.entries({ ...presignedPost.fields, file: formDataFile }).forEach(([key, value]) => {
-        formData.append(key, value);
-      });
-
-      setIsUploadLoading(true);
-      fetch(presignedPost.url, {
-        method: 'POST',
-        body: formData,
-      })
-        .then(async (response) => {
-          if (!response.ok) {
+        setIsUploadLoading(true);
+        fetch(presignedPost.url, {
+          method: 'POST',
+          body: formData,
+        })
+          .then(async (response) => {
+            if (!response.ok) {
+              setError('A intervenit o eroare. Te rugăm să reîncerci.');
+              console.error(await response.text());
+            }
+          })
+          .catch(() => {
             setError('A intervenit o eroare. Te rugăm să reîncerci.');
-            console.error(await response.text());
-          }
-        })
-        .catch(() => {
-          setError('A intervenit o eroare. Te rugăm să reîncerci.');
-        })
-        .finally(() => {
-          setIsReuploadLoading(false);
-          setIsUploadLoading(false);
-          resetUploadProfileImage();
-        });
+          })
+          .finally(() => {
+            setIsReuploadLoading(false);
+            setIsUploadLoading(false);
+            resetUploadProfileImage();
+          });
+      };
+      encryptionWorker.onerror = () => {
+        setError('A intervenit o eroare. Te rugăm să reîncerci.');
+      };
+      encryptionWorker.postMessage({
+        value: isProfileImagePrivate ? result : profileImageFile,
+        encryptionKey: pageSession.user.privateKey,
+        fileType: profileImageFile.type,
+        skip: !isProfileImagePrivate,
+      });
     };
     reader.readAsArrayBuffer(profileImageFile);
   }, [
@@ -270,6 +271,8 @@ const ProfileImage: FC<Props> = ({
   ]);
 
   const handleDeleteProfileImage = () => {
+    setIsProfileImagePrivate(false);
+
     if (error.length > 0) {
       setError('');
       return;

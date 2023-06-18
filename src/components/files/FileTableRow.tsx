@@ -15,34 +15,34 @@ type Props = {
   sent?: boolean;
   handleDownload: (row: FileTablePageRow) => void;
   handleDelete: (row: FileTablePageRow) => void;
-  downloadIsLoading: boolean;
-  deleteIsLoading: boolean;
+  isDownloadLoading: boolean;
+  isDeleteLoading: boolean;
 };
 
 const initialDownloadIcon = faDownload;
 const initialDeleteIcon = faTrashCan;
 
-const FileTableRow: FC<Props> = ({ row, received, sent, deleted, handleDownload, handleDelete, downloadIsLoading, deleteIsLoading }) => {
+const FileTableRow: FC<Props> = ({ row, received, sent, deleted, handleDownload, handleDelete, isDownloadLoading, isDeleteLoading }) => {
   invariant(!(sent && received) && (sent || received), 'Invalid file table parameters.');
 
   const [downloadIcon, setDownloadIcon] = useState(initialDownloadIcon);
   const [deleteIcon, setDeleteIcon] = useState(initialDeleteIcon);
 
   useEffect(() => {
-    if (downloadIsLoading) {
+    if (isDownloadLoading) {
       setDownloadIcon(faEllipsisH);
     } else {
       setDownloadIcon(initialDownloadIcon);
     }
-  }, [downloadIsLoading]);
+  }, [isDownloadLoading]);
 
   useEffect(() => {
-    if (deleteIsLoading) {
+    if (isDeleteLoading) {
       setDeleteIcon(faEllipsisH);
     } else {
       setDeleteIcon(initialDeleteIcon);
     }
-  }, [deleteIsLoading]);
+  }, [isDeleteLoading]);
 
   return (
     <tr className="border-y bg-slate-50 bg-opacity-95 hover:bg-white">

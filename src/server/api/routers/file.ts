@@ -7,7 +7,13 @@ import { createECDH } from 'crypto';
 import { z } from 'zod';
 import { env } from '~/env.mjs';
 import { type FileTablePageData, type FileTablePageMetadata, type FileTablePageRow } from '~/utils/@types/FileTablePageData';
-import { defaultAwsExpirationSeconds, eccCurveName, eccCurvePublicKeyLength, maxFileSizeInBytes } from '~/utils/constants';
+import {
+  defaultAwsFileExpirationSeconds,
+  defaultAwsProfilePictureExpirationSeconds,
+  eccCurveName,
+  eccCurvePublicKeyLength,
+  maxFileSizeInBytes,
+} from '~/utils/constants';
 import { getUserKeysWithGuard } from '~/utils/helpers/auth';
 import { decrypt, encrypt } from '~/utils/helpers/encryption';
 import { getHumanReadableDate } from '~/utils/helpers/shared';
@@ -254,7 +260,7 @@ export const fileRouter = createTRPCRouter({
         Fields: {
           'Content-Type': fileType,
         },
-        Expires: defaultAwsExpirationSeconds,
+        Expires: defaultAwsFileExpirationSeconds,
         Conditions: [['content-length-range', 0, maxFileSizeInBytes]],
       });
 
@@ -317,7 +323,7 @@ export const fileRouter = createTRPCRouter({
         Key: s3Key,
       });
       const signedGetUrl = await getSignedUrl(s3, getCommand, {
-        expiresIn: defaultAwsExpirationSeconds,
+        expiresIn: defaultAwsProfilePictureExpirationSeconds,
       });
 
       const fileReceived = await prisma.appFile.findFirst({

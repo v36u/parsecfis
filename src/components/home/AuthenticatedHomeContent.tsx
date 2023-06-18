@@ -8,9 +8,7 @@ import { useCallback, useEffect, useState, type ChangeEvent, type FC } from 'rea
 import Particles from 'react-particles';
 import { api } from '~/utils/api';
 import { eccCurveName, eccCurvePublicKeyLength, maxFileSizeInBytes } from '~/utils/constants';
-import { encrypt } from '~/utils/helpers/encryption';
 import { getFormattedFileSize } from '~/utils/helpers/file';
-import { getBufferFromReaderResult } from '~/utils/helpers/shared';
 import { useAppError } from '~/utils/hooks/useAppError';
 import { useParticlesInit } from '~/utils/hooks/useParticlesInit';
 import { useAppContext } from '../_app/appContext';
@@ -154,36 +152,42 @@ const AuthenticatedHomeContent: FC<Props> = ({ session }) => {
         return;
       }
 
-      const resultBuffer = getBufferFromReaderResult(result);
-      const { encryptedBuffer: encryptedResultBuffer } = encrypt(resultBuffer, symmetricKey);
-      const encryptedBlob = new Blob([encryptedResultBuffer], {
-        type: file.type,
-      });
+      const encryptionWorker = new Worker(new URL('../../utils/workers/fileEncryptionWebWorker', import.meta.url));
 
-      const formData = new FormData();
-      Object.entries({ ...presignedPost.fields, file: encryptedBlob }).forEach(([key, value]) => {
-        formData.append(key, value);
-      });
-
-      setIsUploadLoading(true);
-      fetch(presignedPost.url, {
-        method: 'POST',
-        body: formData,
-      })
-        .then(async (response) => {
-          if (response.ok) {
-            setDisplaySuccessMessage(true);
-          } else {
-            setGeneralError('A intervenit o eroare. Te rugăm să reîncerci.');
-            console.error(await response.text());
-          }
-        })
-        .catch(() => {
-          setGeneralError('A intervenit o eroare. Te rugăm să reîncerci.');
-        })
-        .finally(() => {
-          setIsUploadLoading(false);
+      encryptionWorker.onmessage = (event) => {
+        const formData = new FormData();
+        Object.entries({ ...presignedPost.fields, file: event.data as File }).forEach(([key, value]) => {
+          formData.append(key, value);
         });
+
+        setIsUploadLoading(true);
+        fetch(presignedPost.url, {
+          method: 'POST',
+          body: formData,
+        })
+          .then(async (response) => {
+            if (response.ok) {
+              setDisplaySuccessMessage(true);
+            } else {
+              setGeneralError('A intervenit o eroare. Te rugăm să reîncerci.');
+              console.error(await response.text());
+            }
+          })
+          .catch(() => {
+            setGeneralError('A intervenit o eroare. Te rugăm să reîncerci.');
+          })
+          .finally(() => {
+            setIsUploadLoading(false);
+          });
+      };
+      encryptionWorker.onerror = () => {
+        setGeneralError('A intervenit o eroare. Te rugăm să reîncerci.');
+      };
+      encryptionWorker.postMessage({
+        value: result,
+        encryptionKey: symmetricKey,
+        fileType: file.type,
+      });
     };
 
     reader.readAsArrayBuffer(file);
@@ -219,7 +223,7 @@ const AuthenticatedHomeContent: FC<Props> = ({ session }) => {
         <>
           <FileSharedSuccessfullyParticles />
           <div className="z-20">
-            <h1 className="mb-6 text-center text-3xl font-bold text-green-500">Fișierul a fost partajat cu succes!</h1>
+            <h1 className="mb-6 text-center text-3xl font-bold text-green-500">Fișierul {file && `"${file.name}"`} a fost partajat cu succes!</h1>
           </div>
           <div className="flex items-center justify-center gap-6">
             <button

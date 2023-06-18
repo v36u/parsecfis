@@ -1,4 +1,4 @@
-import { faClose, faTrashCan } from '@fortawesome/free-solid-svg-icons';
+import { faClose, faTrashCan, faWarning } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import classNames from 'classnames';
 import { createECDH } from 'crypto';
@@ -10,9 +10,7 @@ import invariant from 'tiny-invariant';
 import { type FileTablePageData, type FileTablePageRow } from '~/utils/@types/FileTablePageData';
 import { api } from '~/utils/api';
 import { eccCurveName, filesPerPage } from '~/utils/constants';
-import { decrypt } from '~/utils/helpers/encryption';
 import { getFileTablePageRowKey } from '~/utils/helpers/file';
-import { getBufferFromReaderResult } from '~/utils/helpers/shared';
 import { useAppContext } from '../_app/appContext';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import FileTableRow from './FileTableRow';
@@ -99,35 +97,88 @@ const FileTable: FC<Props> = ({ received, sent, deleted, session, pageData: { ro
             return;
           }
 
-          const resultBuffer = getBufferFromReaderResult(result);
-          const { decryptedBuffer: decryptedResultBuffer } = decrypt(resultBuffer, symmetricKey);
-          const decryptedBlob = new Blob([decryptedResultBuffer], {
-            type: blob.type,
+          const decryptionWorker = new Worker(new URL('../../utils/workers/fileDecryptionWebWorker', import.meta.url));
+
+          decryptionWorker.onmessage = (event) => {
+            const url = window.URL.createObjectURL(event.data as Blob);
+            const temporaryAnchor = document.createElement('a');
+            temporaryAnchor.href = url;
+            temporaryAnchor.download = rowBeingDownloaded.fileName;
+            temporaryAnchor.style.display = 'none';
+            temporaryAnchor.style.visibility = 'hidden';
+            temporaryAnchor.style.opacity = '0';
+
+            document.body.appendChild(temporaryAnchor);
+            temporaryAnchor.click();
+
+            temporaryAnchor.remove();
+
+            setRowBeingDownloaded(null);
+            refetchPageData();
+            refetchNumberOfNewReceivedFiles();
+          };
+          decryptionWorker.onerror = () => {
+            toast(
+              (t) => (
+                <div className="flex gap-3">
+                  <p>
+                    A intervenit o eroare. Te rugăm să reîncerci.
+                    <br />
+                    Dacă această eroare persistă, te rugăm să ștergi acest fișier și să soliciți un nou transfer.
+                  </p>
+                  <button onClick={() => toast.dismiss(t.id)}>
+                    <FontAwesomeIcon icon={faClose} />
+                  </button>
+                </div>
+              ),
+              {
+                duration: 5e3,
+                icon: <FontAwesomeIcon icon={faWarning} />,
+                position: 'top-center',
+                style: {
+                  background: 'rgb(249 200 200)',
+                  color: 'rgb(155 28 28)',
+                  maxWidth: '100%',
+                },
+              },
+            );
+          };
+          decryptionWorker.postMessage({
+            value: result,
+            decryptionKey: symmetricKey,
+            fileType: blob.type,
           });
-
-          const url = window.URL.createObjectURL(decryptedBlob);
-          const temporaryAnchor = document.createElement('a');
-          temporaryAnchor.href = url;
-          temporaryAnchor.download = rowBeingDownloaded.fileName;
-          temporaryAnchor.style.display = 'none';
-          temporaryAnchor.style.visibility = 'hidden';
-          temporaryAnchor.style.opacity = '0';
-
-          document.body.appendChild(temporaryAnchor);
-          temporaryAnchor.click();
-
-          temporaryAnchor.remove();
         };
 
         reader.readAsArrayBuffer(blob);
       })
       .catch((error) => {
+        toast(
+          (t) => (
+            <div className="flex gap-3">
+              <p>
+                A intervenit o eroare. Te rugăm să reîncerci.
+                <br />
+                Dacă această eroare persistă, te rugăm să ștergi acest fișier și să soliciți un nou transfer.
+              </p>
+              <button onClick={() => toast.dismiss(t.id)}>
+                <FontAwesomeIcon icon={faClose} />
+              </button>
+            </div>
+          ),
+          {
+            duration: 5e3,
+            icon: <FontAwesomeIcon icon={faWarning} />,
+            position: 'top-center',
+            style: {
+              background: 'rgb(249 200 200)',
+              color: 'rgb(155 28 28)',
+              maxWidth: '100%',
+            },
+          },
+        );
         console.error(error);
       });
-
-    setRowBeingDownloaded(null);
-    refetchPageData();
-    refetchNumberOfNewReceivedFiles();
   }, [downloadData, refetchNumberOfNewReceivedFiles, refetchPageData, rowBeingDownloaded, session.user.privateKey]);
 
   const [rowBeingDeleted, setRowBeingDeleted] = useState<FileTablePageRow | null>(null);
@@ -157,7 +208,7 @@ const FileTable: FC<Props> = ({ received, sent, deleted, session, pageData: { ro
     if (rowBeingDeleted) {
       toast(
         (t) => (
-          <div className="flex">
+          <div className="flex gap-3">
             <p>
               Fișierul &quot;<em>{rowBeingDeleted.fileName}</em>&quot; a fost <strong>șters</strong> cu succes.
             </p>
@@ -173,6 +224,7 @@ const FileTable: FC<Props> = ({ received, sent, deleted, session, pageData: { ro
           style: {
             background: 'rgb(249 200 200)',
             color: 'rgb(155 28 28)',
+            maxWidth: '100%',
           },
         },
       );
@@ -261,8 +313,8 @@ const FileTable: FC<Props> = ({ received, sent, deleted, session, pageData: { ro
                   row={row}
                   handleDownload={handleDownloadButtonClick}
                   handleDelete={handleDeleteButtonClick}
-                  downloadIsLoading={!!rowBeingDownloaded && getFileTablePageRowKey(rowBeingDownloaded) === rowKey}
-                  deleteIsLoading={!!rowBeingDeleted && getFileTablePageRowKey(rowBeingDeleted) === rowKey}
+                  isDownloadLoading={!!rowBeingDownloaded && getFileTablePageRowKey(rowBeingDownloaded) === rowKey}
+                  isDeleteLoading={!!rowBeingDeleted && getFileTablePageRowKey(rowBeingDeleted) === rowKey}
                 />
               );
             })}

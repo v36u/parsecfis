@@ -4,7 +4,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { env } from '~/env.mjs';
-import { defaultAwsExpirationSeconds, maxProfileImageSizeInBytes } from '~/utils/constants';
+import { defaultAwsProfilePictureExpirationSeconds, maxProfileImageSizeInBytes } from '~/utils/constants';
 import { getUserKeys, getUserKeysWithGuard } from '~/utils/helpers/auth';
 import { encrypt } from '~/utils/helpers/encryption';
 import { authenticatedProcedure, createTRPCRouter, publicProcedure } from '../trpc';
@@ -93,7 +93,7 @@ export const userRouter = createTRPCRouter({
         Fields: {
           'Content-Type': fileType,
         },
-        Expires: defaultAwsExpirationSeconds,
+        Expires: defaultAwsProfilePictureExpirationSeconds,
         Conditions: [['content-length-range', 0, maxProfileImageSizeInBytes]],
       });
 
@@ -180,7 +180,7 @@ export const userRouter = createTRPCRouter({
         Key: profilePictureS3Key,
       });
       const signedGetUrl = await getSignedUrl(s3, getCommand, {
-        expiresIn: defaultAwsExpirationSeconds,
+        expiresIn: defaultAwsProfilePictureExpirationSeconds,
       });
 
       return {

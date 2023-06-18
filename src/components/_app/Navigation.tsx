@@ -35,6 +35,7 @@ const Navigation: FC = () => {
         <Link
           className="flex items-center"
           href="/"
+          title='Partajare Securizată de Fișiere'
         >
           <Image
             src="/parsecfis-logo.png"

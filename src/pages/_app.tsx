@@ -37,7 +37,7 @@ const MyApp: AppType<{ session: Session | null }> = ({ Component, pageProps: { s
       <SessionProvider session={session}>
         <AppContextProvider>
           <Navigation />
-          <main className="align-center flex min-h-screen flex-col justify-center">
+          <main className="align-center flex min-h-screen flex-col justify-center pb-20 pt-20">
             <Component {...pageProps} />
             <Toaster />
             <Analytics />

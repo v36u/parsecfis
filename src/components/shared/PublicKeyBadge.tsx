@@ -45,7 +45,7 @@ const PublicKeyBadge: FC<Props> = ({ publicKey, displayCopyButton, displayProfil
         >
           <button
             type="button"
-            className="py-gap-0.5.5 mr-2 rounded border border-purple-900 bg-yellow-100 px-1 text-xs font-medium text-purple-800 "
+            className="mb-1 mr-2 rounded border border-purple-900 bg-yellow-100 px-1 text-xs font-medium text-purple-800 "
             disabled={copyButtonIcon.iconName === faCheck.iconName}
             onClick={handleCopyButtonClick}
           >
@@ -60,7 +60,7 @@ const PublicKeyBadge: FC<Props> = ({ publicKey, displayCopyButton, displayProfil
         >
           <Link
             href={`/profil/${publicKey}/`}
-            className="py-gap-0.5.5 mr-2 rounded border border-purple-900 bg-yellow-100 px-1 text-xs font-medium text-purple-800 "
+            className="mb-1.5 mr-2 rounded border border-purple-900 bg-yellow-100 px-1 text-xs font-medium text-purple-800 "
           >
             <FontAwesomeIcon icon={faUser} />
           </Link>

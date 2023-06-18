@@ -13,8 +13,6 @@ import LoadingSpinner from '~/components/shared/LoadingSpinner';
 import PublicKeyBadge from '~/components/shared/PublicKeyBadge';
 import { nextAuthOptions } from '~/server/auth';
 import { api } from '~/utils/api';
-import { decrypt } from '~/utils/helpers/encryption';
-import { getBufferFromReaderResult } from '~/utils/helpers/shared';
 import { usePageSession } from '~/utils/hooks/usePageSession';
 
 type Props = {
@@ -105,29 +103,33 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly, serverSess
             return;
           }
 
-          const resultBuffer = getBufferFromReaderResult(result);
-          const { decryptedBuffer: decryptedResultBuffer } = decrypt(resultBuffer, privateKey);
-          const decryptedBlob = new Blob([decryptedResultBuffer], {
-            type: blob.type,
-          });
+          const decryptionWorker = new Worker(new URL('../../utils/workers/fileDecryptionWebWorker', import.meta.url));
 
-          setInitialProfileImageFile(
-            new File([decryptedBlob], publicKey, {
-              type: blob.type,
-              lastModified: Date.now(),
-            }),
-          );
+          decryptionWorker.onmessage = (event) => {
+            const decryptedBlob = event.data as Blob;
+            setInitialProfileImageFile(
+              new File([decryptedBlob], publicKey, {
+                type: blob.type,
+                lastModified: Date.now(),
+              }),
+            );
 
-          const dataUrlReader = new FileReader();
-          dataUrlReader.onloadend = (event) => {
-            const result = event.target?.result;
-            if (!result) {
-              return;
-            }
+            const dataUrlReader = new FileReader();
+            dataUrlReader.onloadend = (event) => {
+              const result = event.target?.result;
+              if (!result) {
+                return;
+              }
 
-            setInitialProfileImageDataUrl(result.toString());
+              setInitialProfileImageDataUrl(result.toString());
+            };
+            dataUrlReader.readAsDataURL(decryptedBlob);
           };
-          dataUrlReader.readAsDataURL(decryptedBlob);
+          decryptionWorker.postMessage({
+            value: result,
+            decryptionKey: privateKey,
+            fileType: blob.type,
+          });
         };
         arrayBufferReader.readAsArrayBuffer(blob);
       })
