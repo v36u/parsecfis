@@ -10,6 +10,7 @@ import { api } from '~/utils/api';
 import { eccCurveName, eccCurvePublicKeyLength, maxFileSizeInBytes } from '~/utils/constants';
 import { encrypt } from '~/utils/helpers/encryption';
 import { getFormattedFileSize } from '~/utils/helpers/file';
+import { getBufferFromReaderResult } from '~/utils/helpers/shared';
 import { useAppError } from '~/utils/hooks/useAppError';
 import { useParticlesInit } from '~/utils/hooks/useParticlesInit';
 import { useAppContext } from '../_app/appContext';
@@ -139,8 +140,6 @@ const AuthenticatedHomeContent: FC<Props> = ({ session }) => {
       return;
     }
 
-    setIsUploadLoading(true);
-
     const { receiverPublicKey, presignedPost } = shareFileData;
     const senderEcdh = createECDH(eccCurveName);
     senderEcdh.setPrivateKey(Buffer.from(session.user.privateKey, 'hex'));
@@ -155,12 +154,7 @@ const AuthenticatedHomeContent: FC<Props> = ({ session }) => {
         return;
       }
 
-      let resultBuffer: Buffer | null = null;
-      if (typeof result === 'string') {
-        resultBuffer = Buffer.from(result);
-      } else {
-        resultBuffer = Buffer.from(new Uint8Array(result));
-      }
+      const resultBuffer = getBufferFromReaderResult(result);
       const { encryptedBuffer: encryptedResultBuffer } = encrypt(resultBuffer, symmetricKey);
       const encryptedBlob = new Blob([encryptedResultBuffer], {
         type: file.type,
@@ -171,6 +165,7 @@ const AuthenticatedHomeContent: FC<Props> = ({ session }) => {
         formData.append(key, value);
       });
 
+      setIsUploadLoading(true);
       fetch(presignedPost.url, {
         method: 'POST',
         body: formData,

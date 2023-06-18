@@ -12,6 +12,7 @@ import { api } from '~/utils/api';
 import { eccCurveName, filesPerPage } from '~/utils/constants';
 import { decrypt } from '~/utils/helpers/encryption';
 import { getFileTablePageRowKey } from '~/utils/helpers/file';
+import { getBufferFromReaderResult } from '~/utils/helpers/shared';
 import { useAppContext } from '../_app/appContext';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import FileTableRow from './FileTableRow';
@@ -98,12 +99,7 @@ const FileTable: FC<Props> = ({ received, sent, deleted, session, pageData: { ro
             return;
           }
 
-          let resultBuffer: Buffer | null = null;
-          if (typeof result === 'string') {
-            resultBuffer = Buffer.from(result);
-          } else {
-            resultBuffer = Buffer.from(new Uint8Array(result));
-          }
+          const resultBuffer = getBufferFromReaderResult(result);
           const { decryptedBuffer: decryptedResultBuffer } = decrypt(resultBuffer, symmetricKey);
           const decryptedBlob = new Blob([decryptedResultBuffer], {
             type: blob.type,

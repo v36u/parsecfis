@@ -1,26 +1,17 @@
 import { type GetServerSideProps, type NextPage } from 'next';
 import { getServerSession, type Session } from 'next-auth';
-import { useSession } from 'next-auth/react';
 import Head from 'next/head';
-import { useEffect, useState } from 'react';
 import AuthenticatedHomeContent from '~/components/home/AuthenticatedHomeContent';
 import UnauthenticatedHomeContent from '~/components/home/UnauthenticatedHomeContent';
 import { nextAuthOptions } from '~/server/auth';
+import { usePageSession } from '~/utils/hooks/usePageSession';
 
 type Props = {
   serverSession: Session | null;
 };
 
 const HomePage: NextPage<Props> = ({ serverSession }) => {
-  const clientSession = useSession();
-  const [pageSession, setPageSession] = useState<Session | null>(serverSession);
-
-  useEffect(() => {
-    if (clientSession.status === 'loading') {
-      return;
-    }
-    setPageSession(clientSession.data);
-  }, [clientSession]);
+  const [pageSession] = usePageSession({ serverSession });
 
   return (
     <>

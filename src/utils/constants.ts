@@ -13,3 +13,5 @@ export const eccCurvePublicKeyLength = 130;
 export const profileImagePrefix = 'pfp_';
 
 export const defaultAwsExpirationSeconds = 5;
+
+export const ivBytes = 16;

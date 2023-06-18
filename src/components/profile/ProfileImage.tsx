@@ -1,20 +1,26 @@
 import { faCircleArrowUp, faTrashCan, faUser } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import classNames from 'classnames';
+import { type Session } from 'next-auth';
 import Image from 'next/image';
 import { useCallback, useEffect, useState, type ChangeEvent, type FC } from 'react';
 import { api } from '~/utils/api';
 import { maxProfileImageSizeInBytes } from '~/utils/constants';
+import { encrypt } from '~/utils/helpers/encryption';
 import { getFormattedFileSize } from '~/utils/helpers/file';
+import { getBufferFromReaderResult } from '~/utils/helpers/shared';
 import { useAppError } from '~/utils/hooks/useAppError';
 import LoadingSpinner from '../shared/LoadingSpinner';
 
 type Props = {
   initialProfileImageDataUrl: string | null;
+  initialProfileImageFile: File | null;
   isProfilePageLoading: boolean;
+  isPrivate: boolean | null;
+  pageSession: Session;
 };
 
-const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, isProfilePageLoading }) => {
+const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, initialProfileImageFile, isProfilePageLoading, isPrivate, pageSession }) => {
   const {
     mutate: uploadProfileImage,
     data: uploadProfileImageData,
@@ -41,13 +47,56 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, isProfilePageLoad
     setProfileImageDataUrl(initialProfileImageDataUrl);
   }, [initialProfileImageDataUrl]);
 
-  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(initialProfileImageFile);
+  useEffect(() => {
+    setProfileImageFile(initialProfileImageFile);
+  }, [initialProfileImageFile]);
+
   const [isHovering, setIsHovering] = useState(false);
   const [error, setError] = useState('');
 
   const [isUploadLoading, setIsUploadLoading] = useState(false);
 
   const [profileImageInputValue, setProfileImageInputValue] = useState('');
+
+  const [isProfileImagePrivate, setIsProfileImagePrivate] = useState(!!isPrivate);
+  useEffect(() => {
+    if (typeof isPrivate !== 'object') {
+      setIsProfileImagePrivate(isPrivate);
+    }
+  }, [isPrivate]);
+
+  const [shouldReuploadProfileImage, setShouldReuploadProfileImage] = useState(false);
+  const getHandlePrivateProfileImageCheckboxChange = useCallback(
+    () => (event: ChangeEvent<HTMLInputElement>) => {
+      const { checked } = event.target;
+      setIsProfileImagePrivate(checked);
+      if (!profileImageFile) {
+        return;
+      }
+
+      deleteProfileImage();
+      setShouldReuploadProfileImage(true);
+    },
+    [deleteProfileImage, profileImageFile],
+  );
+  useEffect(() => {
+    if (!shouldReuploadProfileImage) {
+      return;
+    }
+    if (!isDeleteProfileImageSuccess) {
+      return;
+    }
+    if (!profileImageFile) {
+      return;
+    }
+
+    uploadProfileImage({
+      fileType: profileImageFile.type,
+      isPrivate: isProfileImagePrivate,
+    });
+    setShouldReuploadProfileImage(false);
+  }, [isDeleteProfileImageSuccess, isProfileImagePrivate, profileImageFile, shouldReuploadProfileImage, uploadProfileImage]);
 
   const clearProfileImage = useCallback(() => {
     setProfileImageFile(null);
@@ -87,6 +136,7 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, isProfilePageLoad
     }
     uploadProfileImage({
       fileType: file.type,
+      isPrivate: isProfileImagePrivate,
     });
   };
 
@@ -105,35 +155,56 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, isProfilePageLoad
       return;
     }
 
-    setIsUploadLoading(true);
-
     const { presignedPost } = uploadProfileImageData;
 
-    const formData = new FormData();
-    Object.entries({ ...presignedPost.fields, file: profileImageFile }).forEach(([key, value]) => {
-      formData.append(key, value);
-    });
-
-    fetch(presignedPost.url, {
-      method: 'POST',
-      body: formData,
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          setError('A intervenit o eroare. Te rugăm să reîncerci.');
-          console.error(await response.text());
-        }
-      })
-      .catch(() => {
+    const reader = new FileReader();
+    reader.onloadend = (event) => {
+      const result = event.target?.result;
+      if (!result) {
         setError('A intervenit o eroare. Te rugăm să reîncerci.');
-      })
-      .finally(() => {
-        setIsUploadLoading(false);
-        resetUploadProfileImage();
+        return;
+      }
+
+      let formDataFile: File | Blob = profileImageFile;
+
+      if (isProfileImagePrivate) {
+        const resultBuffer = getBufferFromReaderResult(result);
+        const { encryptedBuffer: encryptedResultBuffer } = encrypt(resultBuffer, pageSession.user.privateKey);
+        formDataFile = new Blob([encryptedResultBuffer], {
+          type: profileImageFile.type,
+        });
+      }
+
+      const formData = new FormData();
+      Object.entries({ ...presignedPost.fields, file: formDataFile }).forEach(([key, value]) => {
+        formData.append(key, value);
       });
+
+      setIsUploadLoading(true);
+      fetch(presignedPost.url, {
+        method: 'POST',
+        body: formData,
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            setError('A intervenit o eroare. Te rugăm să reîncerci.');
+            console.error(await response.text());
+          }
+        })
+        .catch(() => {
+          setError('A intervenit o eroare. Te rugăm să reîncerci.');
+        })
+        .finally(() => {
+          setIsUploadLoading(false);
+          resetUploadProfileImage();
+        });
+    };
+    reader.readAsArrayBuffer(profileImageFile);
   }, [
+    isProfileImagePrivate,
     isUploadProfileImageError,
     isUploadProfileImageSuccess,
+    pageSession.user.privateKey,
     processedUploadProfileImageError,
     profileImageFile,
     resetUploadProfileImage,
@@ -149,6 +220,7 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, isProfilePageLoad
 
     setError('');
     deleteProfileImage();
+    clearProfileImage();
   };
 
   useEffect(() => {
@@ -159,7 +231,6 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, isProfilePageLoad
     if (!isDeleteProfileImageSuccess) {
       return;
     }
-    clearProfileImage();
     resetDeleteProfileImage();
   }, [clearProfileImage, isDeleteProfileImageError, isDeleteProfileImageSuccess, processedDeleteProfileImageError, resetDeleteProfileImage]);
 
@@ -215,14 +286,33 @@ const ProfileImage: FC<Props> = ({ initialProfileImageDataUrl, isProfilePageLoad
         />
       </label>
       {profileImageDataUrl && (
-        <button
-          type="button"
-          className="text-red-500"
-          value={profileImageInputValue}
-          onClick={handleDeleteProfileImage}
-        >
-          <FontAwesomeIcon icon={faTrashCan} /> Șterge imaginea
-        </button>
+        <>
+          {error.length === 0 && (
+            <div className="mb-1 flex items-center justify-center">
+              <input
+                id="private-profile-image"
+                type="checkbox"
+                onChange={getHandlePrivateProfileImageCheckboxChange()}
+                checked={isProfileImagePrivate}
+                className="h-4 w-4 rounded border-gray-300 bg-gray-100 text-purple-600 focus:ring-2 focus:ring-purple-500"
+              />
+              <label
+                htmlFor="private-profile-image"
+                className="ml-2 text-sm font-medium text-gray-900"
+              >
+                Imagine privată
+              </label>
+            </div>
+          )}
+          <button
+            type="button"
+            className="text-red-500"
+            value={profileImageInputValue}
+            onClick={handleDeleteProfileImage}
+          >
+            <FontAwesomeIcon icon={faTrashCan} /> Șterge imaginea
+          </button>
+        </>
       )}
       <div className="z-10 mt-1 bg-gradient-to-br from-red-800 to-red-500 bg-clip-text text-center text-sm font-bold text-transparent">{error}</div>
     </div>

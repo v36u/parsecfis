@@ -2,7 +2,7 @@ import { faEnvelope, faUser } from '@fortawesome/free-solid-svg-icons';
 import { type UseMutationResult } from '@tanstack/react-query';
 import classNames from 'classnames';
 import type { GetServerSideProps, NextPage } from 'next';
-import { getServerSession } from 'next-auth';
+import { getServerSession, type Session } from 'next-auth';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import ProfileImage from '~/components/profile/ProfileImage';
@@ -13,21 +13,31 @@ import LoadingSpinner from '~/components/shared/LoadingSpinner';
 import PublicKeyBadge from '~/components/shared/PublicKeyBadge';
 import { nextAuthOptions } from '~/server/auth';
 import { api } from '~/utils/api';
-import HttpStatusCode from '~/utils/enums/HttpStatusCode';
+import { decrypt } from '~/utils/helpers/encryption';
+import { getBufferFromReaderResult } from '~/utils/helpers/shared';
+import { usePageSession } from '~/utils/hooks/usePageSession';
 
 type Props = {
+  serverSession: Session | null;
   publicKey: string;
   isReadOnly: boolean;
 };
 
-export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
+export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly, serverSession }) => {
+  const [pageSession] = usePageSession({ serverSession });
+  const privateKey = pageSession?.user.privateKey;
+
   const textProfil = isReadOnly ? 'Profil' : 'Profilul tău';
 
-  const { data: userData, isLoading: isUserDataLoading } = api.user.fetchUserWithGuard.useQuery(
+  const { data: userData, isLoading: isUserDataLoading } = api.user.fetchUser.useQuery(
     {
       publicKey,
     },
-    { refetchOnMount: false, refetchOnReconnect: false, refetchOnWindowFocus: false },
+    {
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+    },
   );
   const nameMutation = api.user.updateName.useMutation() as UseMutationResult;
   const emailMutation = api.user.updateEmail.useMutation() as UseMutationResult;
@@ -36,16 +46,21 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
     {
       publicKey,
     },
-    { refetchOnMount: false, refetchOnReconnect: false, refetchOnWindowFocus: false },
+    {
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+    },
   );
   const [initialProfileImageDataUrl, setInitialProfileImageDataUrl] = useState<string | null>(null);
+  const [initialProfileImageFile, setInitialProfileImageFile] = useState<File | null>(null);
   const [isInitialProfileImageDownloading, setIsInitialProfileImageDownloading] = useState(false);
   useEffect(() => {
     if (!initialProfileImageData) {
       return;
     }
 
-    const { signedGetUrl } = initialProfileImageData;
+    const { signedGetUrl, isPrivate } = initialProfileImageData;
     if (!signedGetUrl) {
       setInitialProfileImageDataUrl(null);
       return;
@@ -55,16 +70,63 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
     fetch(signedGetUrl)
       .then((response) => response.blob())
       .then((blob) => {
-        const dataUrlReader = new FileReader();
-        dataUrlReader.onloadend = (event) => {
+        if (!isPrivate) {
+          setInitialProfileImageFile(
+            new File([blob], publicKey, {
+              type: blob.type,
+              lastModified: Date.now(),
+            }),
+          );
+
+          const dataUrlReader = new FileReader();
+          dataUrlReader.onloadend = (event) => {
+            const result = event.target?.result;
+            if (!result) {
+              return;
+            }
+
+            setInitialProfileImageDataUrl(result.toString());
+          };
+          dataUrlReader.readAsDataURL(blob);
+          return;
+        }
+
+        if (!privateKey) {
+          return;
+        }
+
+        const arrayBufferReader = new FileReader();
+        arrayBufferReader.onloadend = (event) => {
           const result = event.target?.result;
           if (!result) {
             return;
           }
 
-          setInitialProfileImageDataUrl(result.toString());
+          const resultBuffer = getBufferFromReaderResult(result);
+          const { decryptedBuffer: decryptedResultBuffer } = decrypt(resultBuffer, privateKey);
+          const decryptedBlob = new Blob([decryptedResultBuffer], {
+            type: blob.type,
+          });
+
+          setInitialProfileImageFile(
+            new File([decryptedBlob], publicKey, {
+              type: blob.type,
+              lastModified: Date.now(),
+            }),
+          );
+
+          const dataUrlReader = new FileReader();
+          dataUrlReader.onloadend = (event) => {
+            const result = event.target?.result;
+            if (!result) {
+              return;
+            }
+
+            setInitialProfileImageDataUrl(result.toString());
+          };
+          dataUrlReader.readAsDataURL(decryptedBlob);
         };
-        dataUrlReader.readAsDataURL(blob);
+        arrayBufferReader.readAsArrayBuffer(blob);
       })
       .catch((error) => {
         console.error(error);
@@ -72,7 +134,7 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
       .finally(() => {
         setIsInitialProfileImageDownloading(false);
       });
-  }, [initialProfileImageData]);
+  }, [initialProfileImageData, privateKey, publicKey]);
 
   const isLoading = isUserDataLoading || isInitialProfileImageDataLoading || isInitialProfileImageDownloading;
 
@@ -98,7 +160,7 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
             })}
           >
             {isLoading && <LoadingSpinner />}
-            {isReadOnly ? (
+            {isReadOnly || !pageSession ? (
               <ProfileImageReadOnly
                 initialProfileImageDataUrl={initialProfileImageDataUrl}
                 isProfilePageLoading={isLoading}
@@ -106,7 +168,10 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
             ) : (
               <ProfileImage
                 initialProfileImageDataUrl={initialProfileImageDataUrl}
+                initialProfileImageFile={initialProfileImageFile}
+                isPrivate={initialProfileImageData?.isPrivate ?? null}
                 isProfilePageLoading={isLoading}
+                pageSession={pageSession}
               />
             )}
             {isReadOnly && userData?.name && (
@@ -149,15 +214,7 @@ export const ProfilePage: NextPage<Props> = ({ publicKey, isReadOnly }) => {
 };
 
 export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res, params }) => {
-  const session = await getServerSession(req, res, nextAuthOptions);
-  if (!session) {
-    return {
-      redirect: {
-        destination: '/',
-        statusCode: HttpStatusCode.TEMPORARY_REDIRECT,
-      },
-    };
-  }
+  const serverSession = await getServerSession(req, res, nextAuthOptions);
 
   const publicKey = params?.publicKey;
   if (typeof publicKey !== 'string') {
@@ -166,10 +223,11 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res, 
     };
   }
 
-  const isReadOnly = session.user.publicKey !== publicKey;
+  const isReadOnly = serverSession?.user.publicKey !== publicKey;
 
   return {
     props: {
+      serverSession,
       publicKey,
       isReadOnly,
     },

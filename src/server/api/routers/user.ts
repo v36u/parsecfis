@@ -1,33 +1,19 @@
-import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, S3 } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, S3 } from '@aws-sdk/client-s3';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { env } from '~/env.mjs';
-import { defaultAwsExpirationSeconds, eccCurvePublicKeyLength, maxProfileImageSizeInBytes } from '~/utils/constants';
-import { getUserKeysWithGuard } from '~/utils/helpers/auth';
-import { getProfileImageS3Key } from '~/utils/helpers/user';
+import { defaultAwsExpirationSeconds, maxProfileImageSizeInBytes } from '~/utils/constants';
+import { getUserKeys, getUserKeysWithGuard } from '~/utils/helpers/auth';
+import { encrypt } from '~/utils/helpers/encryption';
 import { authenticatedProcedure, createTRPCRouter, publicProcedure } from '../trpc';
 
 export const userRouter = createTRPCRouter({
-  fetchUserWithGuard: publicProcedure
-    .input(
-      z.object({
-        publicKey: z.string().length(eccCurvePublicKeyLength, 'Cheie publică invalidă.'),
-      }),
-    )
-    .query(async ({ ctx: { prisma }, input: { publicKey } }) => {
-      const user = await prisma.appUser.findUniqueOrThrow({
-        where: {
-          publicKey,
-        },
-      });
-      return user;
-    }),
   fetchUser: publicProcedure
     .input(
       z.object({
-        publicKey: z.string().length(eccCurvePublicKeyLength, 'Cheie publică invalidă.'),
+        publicKey: z.string(),
       }),
     )
     .query(async ({ ctx: { prisma }, input: { publicKey } }) => {
@@ -89,12 +75,16 @@ export const userRouter = createTRPCRouter({
     .input(
       z.object({
         fileType: z.string(),
+        isPrivate: z.boolean(),
       }),
     )
-    .mutation(async ({ ctx: { session }, input: { fileType } }) => {
-      const { publicKey } = getUserKeysWithGuard(session);
+    .mutation(async ({ ctx: { session, prisma }, input: { fileType, isPrivate } }) => {
+      const { publicKey, privateKey } = getUserKeysWithGuard(session);
 
-      const s3Key = getProfileImageS3Key(publicKey);
+      let s3Key = publicKey;
+      if (isPrivate) {
+        s3Key = encrypt(s3Key, privateKey).encryptedBuffer.toString('hex');
+      }
 
       const s3 = new S3({});
       const presignedPost = await createPresignedPost(s3, {
@@ -107,54 +97,87 @@ export const userRouter = createTRPCRouter({
         Conditions: [['content-length-range', 0, maxProfileImageSizeInBytes]],
       });
 
+      await prisma.appUser.update({
+        data: {
+          profilePictureS3Key: s3Key,
+        },
+        where: {
+          publicKey,
+        },
+      });
+
       return {
         presignedPost,
       };
     }),
-  deleteProfileImage: authenticatedProcedure.mutation(async ({ ctx: { session } }) => {
+  deleteProfileImage: authenticatedProcedure.mutation(async ({ ctx: { session, prisma } }) => {
     const { publicKey } = getUserKeysWithGuard(session);
 
-    const s3Key = getProfileImageS3Key(publicKey);
+    const foundUser = await prisma.appUser.findFirst({
+      where: {
+        publicKey,
+      },
+      select: {
+        profilePictureS3Key: true,
+      },
+    });
+    if (!foundUser?.profilePictureS3Key) {
+      return;
+    }
 
     const s3 = new S3({});
     const deleteCommand = new DeleteObjectCommand({
       Bucket: env.AWS_S3_BUCKET_NAME_PROFILE_IMAGES,
-      Key: s3Key,
+      Key: foundUser.profilePictureS3Key,
     });
     await s3.send(deleteCommand);
+
+    await prisma.appUser.update({
+      data: {
+        profilePictureS3Key: null,
+      },
+      where: {
+        publicKey,
+      },
+    });
   }),
-  initiateProfileImageDownload: authenticatedProcedure
+  initiateProfileImageDownload: publicProcedure
     .input(
       z.object({
-        publicKey: z.string().length(eccCurvePublicKeyLength, 'Cheie publică invalidă.'),
+        publicKey: z.string(),
       }),
     )
-    .query(async ({ input: { publicKey } }) => {
-      const s3Key = getProfileImageS3Key(publicKey);
+    .query(async ({ ctx: { session, prisma }, input: { publicKey } }) => {
+      const foundUser = await prisma.appUser.findFirst({
+        where: {
+          publicKey,
+        },
+        select: {
+          profilePictureS3Key: true,
+        },
+      });
 
-      const s3 = new S3({});
-
-      try {
-        const headCommand = new HeadObjectCommand({
-          Bucket: env.AWS_S3_BUCKET_NAME_PROFILE_IMAGES,
-          Key: s3Key,
-        });
-        const headCommandResponse = await s3.send(headCommand);
-
-        if (headCommandResponse.ContentLength === 0) {
-          return {
-            signedGetUrl: null,
-          };
-        }
-      } catch (_) {
+      if (!foundUser?.profilePictureS3Key) {
         return {
           signedGetUrl: null,
         };
       }
 
+      const { profilePictureS3Key } = foundUser;
+
+      const { publicKey: sessionPublicKey } = getUserKeys(session);
+      const isPrivateS3Key = publicKey !== profilePictureS3Key;
+      if (isPrivateS3Key && sessionPublicKey !== publicKey) {
+        return {
+          signedGetUrl: null,
+        };
+      }
+
+      const s3 = new S3({});
+
       const getCommand = new GetObjectCommand({
         Bucket: env.AWS_S3_BUCKET_NAME_PROFILE_IMAGES,
-        Key: s3Key,
+        Key: profilePictureS3Key,
       });
       const signedGetUrl = await getSignedUrl(s3, getCommand, {
         expiresIn: defaultAwsExpirationSeconds,
@@ -162,6 +185,7 @@ export const userRouter = createTRPCRouter({
 
       return {
         signedGetUrl,
+        isPrivate: isPrivateS3Key,
       };
     }),
 });
